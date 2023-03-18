@@ -18,7 +18,9 @@
     if(test_h === undefined || test_h === null || test_h === 0){test_h = 1;}
     return test_x + test_w > x /*Left*/ && test_x < x + w /*Right*/ && test_y + test_h > y /*Top*/ && test_y < y + h /*Bottom*/;
 };
-
+			function framerate(setTo){
+				FRAMERATE = setTo;
+			}
             function fill(color){
                 ctx.fillStyle = color
             }
@@ -147,9 +149,11 @@ var inputStart = {
 			keyDown = function(e){};
 			keyUp = function(e){}
 			
-            setInterval(function(){
-                 draw()
-            }, 1000 / FRAMERATE)
+			function drawFrame(){
+				draw();
+				setTimeout(drawFrame, 1000 / FRAMERATE)
+			}
+			drawFrame();
             
             document.onkeydown = function (e) {
                 pressing[e.key.toString()] = true
