@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Snake</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script>
+			framerate(12);
+			var snake = [
+				new PVector(1, 1),
+				new PVector(2, 1),
+				new PVector(3, 1)
+			];
+			var apple = new PVector(floor(random(0, 20)), floor(random(0, 20)));
+			var direction = 1;
+			var dirToSet = direction;
+			var inputOnFrame = false;
+			draw = function() {
+				direction = dirToSet;
+				background("#a1a1a1");
+				for(var i = snake.length - 1; i > 0; --i){
+					snake[i] = new PVector(snake[i - 1].x, snake[i - 1].y);
+				}
+				
+				
+				if(direction === 1){
+					snake[0].y += 1;
+				}
+				if(direction === 3){
+					snake[0].y -= 1;
+				}
+				if(direction === 2){
+					snake[0].x -= 1;
+				}
+				if(direction === 4){
+					snake[0].x += 1;
+				}
+				
+				for(var i = 1; i < snake.length; ++i){
+					if(snake[0].x === snake[i].x && snake[0].y === snake[i].y){
+						snake = [
+						new PVector(1, 1),
+						new PVector(2, 1),
+						new PVector(3, 1)
+						];
+						apple = new PVector(floor(random(0, 20)), floor(random(0, 20)));
+					}
+				}
+				if(snake[0].x < 0 || snake[0].x > 19 || snake[0].y < 0 || snake[0].y > 19){
+					snake = [
+						new PVector(1, 1),
+						new PVector(2, 1),
+						new PVector(3, 1)
+						];
+						apple = new PVector(floor(random(0, 20)), floor(random(0, 20)));
+				}
+				
+				for(var i = 0; i < snake.length; ++i){
+				fill("#00FF00");
+				rect(snake[i].x * 20, snake[i].y * 20, 20, 20);
+				}
+				fill("#FF0000");
+				
+				 if(snake[0].x === apple.x && snake[0].y === apple.y){
+					apple = new PVector(floor(random(0, 20)), floor(random(0, 20)));
+					snake.push(new PVector());
+				}
+				rect(apple.x * 20, apple.y * 20, 20, 20);
+				fill("#000000");
+				rect(400, 0, width, height);
+				rect(0, 400, width, height);
+			};
+			keyDown = function(key){
+				if(key === "ArrowDown" && direction !== 3){
+					dirToSet = 1;
+					inputOnFrame = true;
+				}
+				if(key === "ArrowUp" && direction !== 1){
+					dirToSet = 3;
+					inputOnFrame = true;
+				}
+				if(key === "ArrowLeft" && direction !== 4){
+					dirToSet = 2;
+					inputOnFrame = true;
+				}
+				if(key === "ArrowRight" && direction !== 2){
+					dirToSet = 4;
+					inputOnFrame = true;
+				}
+			};
+		</script>
+    </body>
+</html>

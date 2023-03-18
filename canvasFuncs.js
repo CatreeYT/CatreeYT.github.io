@@ -18,6 +18,16 @@
     if(test_h === undefined || test_h === null || test_h === 0){test_h = 1;}
     return test_x + test_w > x /*Left*/ && test_x < x + w /*Right*/ && test_y + test_h > y /*Top*/ && test_y < y + h /*Bottom*/;
 };
+			
+			function PVector(x, y){
+				this.x = x;
+				this.y = y;
+			}
+			
+			function dist(x1, y1, x2, y2){
+				return Math.sqrt(Math.pow(x2 - x1) + Math.pow(y2 - y1))
+			}
+			
 			function framerate(setTo){
 				FRAMERATE = setTo;
 			}
@@ -27,6 +37,20 @@
             function rect(x, y, w, h){
                 ctx.fillRect(x, y, w, h)
             }
+			
+			function lineColor(setTo){
+				ctx.strokeStyle = setTo;
+			}
+			function line(x1, y1, x2, y2){
+				let theLine = new Path2D();
+				theLine.moveTo(x1, y1);
+				theLine.lineTo(x2, y2);
+				theLine.closePath();
+				
+				
+				ctx.stroke(theLine);
+				
+			}
             function font(setTo){
                 ctx.font = setTo
             }
@@ -42,6 +66,9 @@
             }
 			function floor(e){
 				return Math.floor(e)
+			}
+			function round(num){
+				return Math.round(num);
 			}
 			function random(min, max){
 				return Math.random() * (max - min)
@@ -148,15 +175,49 @@ var inputStart = {
 			draw = function(){};
 			keyDown = function(e){};
 			keyUp = function(e){}
-			
+			mouseClicked = function(){}
 			function drawFrame(){
 				draw();
+				inputStart = {
+    ArrowUp: false,
+	ArrowRight: false,
+	ArrowLeft: false,
+	ArrowDown: false,
+	Shift: false,
+	Tab: false,
+	a: false,
+	b: false,
+	c: false,
+	d: false,
+	e: false,
+	f: false,
+	g: false,
+	h: false,
+	i: false,
+	j: false,
+	k: false,
+	l: false,
+	m: false,
+	n: false,
+	o: false,
+	p: false,
+	q: false,
+	r: false,
+	s: false,
+	t: false,
+	u: false,
+	v: false,
+	w: false,
+	x: false,
+	y: false,
+	z: false,
+};
 				setTimeout(drawFrame, 1000 / FRAMERATE)
 			}
 			drawFrame();
-            
             document.onkeydown = function (e) {
                 pressing[e.key.toString()] = true
+				inputStart[e.key.toString()] = true
 				keyDown(e.key.toString())
             };
             document.onkeyup = function (e) {
@@ -168,3 +229,9 @@ var inputStart = {
 				mouseX = event.pageX - 7
 				mouseY = event.pageY - 7
 			}
+			document.onmousedown = function(e){
+				mouseClicked(e);
+			}
+			window.addEventListener('contextmenu', function (e) { 
+			  e.preventDefault(); 
+			}, false);
