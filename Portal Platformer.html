@@ -16,6 +16,27 @@
         
 		<script src="canvasFuncs.js"></script>
         <script>
+		
+			var timer = 0;
+			var timerRunning = false;
+			
+			function timerCycle(){
+				if(timerRunning){
+					timer += 0.01;
+					setTimeout(timerCycle, 10);
+				}
+			}
+			
+			keyDown = function(key){
+				if(!timerRunning){
+					timerRunning = true;
+					timerCycle();
+				}
+				if(key === "p"){
+					timerRunning = false;
+				}
+			}
+		
 			var vector2 = function(x, y){
 this.x = x;
 this.y = y;
@@ -373,7 +394,9 @@ player.y = spawns[chamber].y;
 
 draw = function() {
     background("#444444");
-    
+    fill("#FFFFFF");
+	rect(8, 0, 50, 15);
+	writeText(floor(timer/60) + " : " + floor(timer*100) / 100, 10, 10);
     if(fs > 0.01 || fs < -0.01){
         cJ = false;
     }
