@@ -21,11 +21,18 @@ function touching(x, y, w, h, test_x, test_y, test_w, test_h){
 }
 
 var tiles = [
-    color(255, 0, 0),
-    color(212, 102, 0),
-    color(9, 255, 0),
-    color(255, 0, 230),
+    color(255, 0, 0), // Death
+    color(212, 102, 0), // Dirt
+    color(9, 255, 0), // Grass
+    color(255, 0, 230), // Bounce
+    color(221, 255, 0), // Ladder
+    color(184, 184, 184), // DS on
+    color(105, 105, 105), // DS off
+    color(255, 162, 0), // Death (ds on)
+    color(255, 162, 0), // Death (ds off)
 ];
+
+var deathSwitch = false;
 
 function randomInt(min, max){
     return floor(random(min, max));
@@ -64,6 +71,41 @@ var bounce = [
     [3, 3, 3],
     [1, 1, 1],
 ];
+var ladder = [
+    [-2, -2, 4, 1],
+    [-2, -2, 4, 1],
+    [-2, -2, 4, 1],
+    [-2, -2, 4, 1],
+    [-2, -2, 4, 1],
+    ];
+var onSwitch = [
+    [-2, -2, -2],
+    [-2, -2, -2],
+    [-2, 5, -2],
+    [2, 2, 2],
+    [1, 1, 1],
+];
+var offSwitch = [
+    [-2, -2, -2],
+    [-2, -2, -2],
+    [-2, 6, -2],
+    [2, 2, 2],
+    [1, 1, 1],
+];
+var deathPitDSon = [
+    [-2, -2, -2],
+    [-2, -2, -2],
+    [-2, -2, -2],
+    [-2, -2, -2],
+    [7, 7, 7],
+];
+var deathPitDSoff = [
+    [-2, -2, -2],
+    [-2, -2, -2],
+    [-2, -2, -2],
+    [-2, -2, -2],
+    [8, 8, 8],
+];
 
 var prefabs = [
     smallPlatform,
@@ -71,14 +113,24 @@ var prefabs = [
     air,
     wall,
     bounce,
+    ladder,
+    onSwitch,
+    offSwitch,
+    deathPitDSon,
+    deathPitDSoff
 ];
 
 var chances = [
-    1.0,
-    0.8,
-    1.5,
-    0.6,
-    0.6,
+    1.0, // Small Platform
+    0.8, // Death Pit
+    1.5, // Air
+    0.6, // Wall
+    0.6, // Bounce
+    0.6, // Ladder
+    0.5, // onSwitch
+    0.5, // offSwitch
+    0.5, // death pit (only on death switch on)
+    0.5, // death pit (only on death switch off)
 ];
 
 var chancesSum = 0;
@@ -143,10 +195,15 @@ var player = {
 };
 
 var checkOrder = [
-        1,
-        3,
-        0,
-        2,
+        1, // Dirt
+        3, // Bounce
+        0, // Death
+        7, // Death DS on
+        8, // Death DS off
+        2, // Grass
+        4, // Ladder
+        5, // DS on
+        6, // DS off
     ];
     
 var screen1 = generateLevel(levelDims, levelDims, seed);
@@ -163,8 +220,8 @@ draw = function() {
     screen = floor(player.x / width);
     xRelToScreen = player.x - screen * width;
     pushMatrix();
-    if(player.x - player.screenScroll > width * 0.5 - 10){
-        player.screenScroll = player.x - width * 0.5 - 10;
+    if(player.x - player.screenScroll > (width * 0.5 - 10)){
+        player.screenScroll = player.x - (width * 0.5 - 10);
     }
     translate(-player.screenScroll, 0);
     if(pressing[UP] && player.fs === 0){
@@ -192,7 +249,15 @@ draw = function() {
         for(var i = 0; i < levelDims; ++i){
             for(var j = 0; j < levelDims; ++j){
                 var l = screens[s];
-                if(l[i][j] !== -1 && l[i][j] !== -2){
+                if(l[i][j] !== -1 && l[i][j] !== -2 && l[i][j] !== 7 && l[i][j] !== 8){
+                    fill(tiles[l[i][j]]);
+                    rect(i * 20 + (width * s), j * 20, 20, 20);
+                }
+                if(l[i][j] === 7 && deathSwitch){
+                    fill(tiles[l[i][j]]);
+                    rect(i * 20 + (width * s), j * 20, 20, 20);
+                }
+                if(l[i][j] === 8 && !deathSwitch){
                     fill(tiles[l[i][j]]);
                     rect(i * 20 + (width * s), j * 20, 20, 20);
                 }
@@ -243,6 +308,47 @@ draw = function() {
                         }
                         case 3: {
                             player.fs = -5;
+                            break;
+                        }
+                        case 4: {
+                            if(player.fs > 0 && touching(i * 20 + (width * s), j * 20, 20, 5, player.x, player.y + 15, 20, 5) && l[i][max(0, j - 1)] !== 1 && l[i][max(0, j - 1)] !== 2){
+                                player.fs = 0;
+                                player.y -= 0.5;
+                            } else if (player.fs < 0 && touching(i * 20 + (width * s), j * 20 + 15, 20, 5, player.x, player.y, 20, 5) && l[i][min(19, j + 1)] !== 1 && l[i][min(19, j + 1)] !== 2) {
+                                player.fs = 0.2;
+                                
+                            } else {
+                            player.fs = -1;
+                            if(pressing[RIGHT]){player.x -= 2;}
+                            if(pressing[LEFT]){player.x += 2;}
+                            }
+                            break;
+                        }
+                        case 5: {
+                            deathSwitch = true;
+                            break;
+                        }
+                        case 6: {
+                            deathSwitch = false;
+                            break;
+                        }
+                        case 7: {
+                            if(deathSwitch){
+                            player.y = 0;
+                            player.x = 0;
+                            player.fs = 0;
+                            player.screenScroll = 0;
+                            }
+                            break;
+                        }
+                        case 8: {
+                            if(!deathSwitch){
+                            player.y = 0;
+                            player.x = 0;
+                            player.fs = 0;
+                            player.screenScroll = 0;
+                            }
+                            break;
                         }
                     }
                 }
@@ -260,12 +366,12 @@ draw = function() {
     fill(255, 255, 255);
     rect(player.x, player.y, 20, 20);
     popMatrix();
-    if(screen === 1 && xRelToScreen > width * 0.5 - 10){
+    if(screen === 1 && xRelToScreen > (width * 0.5 - 10)){
         player.x -= width;
         screens[0] = screens[1];
         screens[1] = screens[2];
         screens[2] = generateLevel(levelDims, levelDims, seed);
-        player.screenScroll = player.x - width * 0.5 - 10;
+        player.screenScroll = player.x - (width * 0.5 - 10);
         ++area;
     }
 };
