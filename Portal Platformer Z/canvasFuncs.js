@@ -3,37 +3,11 @@ var ctx = canvas.getContext("2d");
 
 var FRAMERATE = 100
 
-canvas.style.position = "absolute"
-canvas.style.left = "0px"
-canvas.style.top = "0px"
-
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
 var width = canvas.width
 var height = canvas.height
-
-var canvasMap = ctx.createImageData(width, height);
-
-function getPixelData(x, y){
-	var rIndex = getCoords(x, y);
-	var data = canvasMap.data;
-	return {r: data[rIndex], g: data[rIndex + 1], b: data[rIndex + 2], a: data[rIndex + 3]};
-}
-function getCoords(x, y){
-	var rIndex = y * (width * 4) + x * 4;
-	return rIndex;
-}
-
-function getPixelHex(x, y){
-	var pixel = getPixelData(x, y);
-	return color(pixel.r, pixel.g, pixel.b);
-}
-function setPixelHex(x, y, clr){
-	var pixelIndex = getCoords(x, y);
-	var colorRGB = hexToRGB(clr);
-	return color(colorRGB.r, colorRGB.g, colorRGB.b);
-}
 
 var mouseX
 var mouseY
@@ -160,34 +134,17 @@ var touching = function(x, y, w, h, test_x, test_y, test_w, test_h){
 	return test_x + test_w > x /*Left*/ && test_x < x + w /*Right*/ && test_y + test_h > y /*Top*/ && test_y < y + h /*Bottom*/;
 };
 
-function PVector(x, y, z){
+function PVector(x, y){
 	this.x = x;
 	this.y = y;
-	this.z = z;
-	this.add = function(otherV){this.x += otherV.x; this.y += otherV.y; if(this.z !== undefined){this.z += otherV.z;}};
-	this.sub = function(otherV){this.x -= otherV.x; this.y -= otherV.y; if(this.z !== undefined){this.z -= otherV.z;}};
-	this.mult = function(otherV){this.x *= otherV.x; this.y *= otherV.y; if(this.z !== undefined){this.z *= otherV.z;}};
-	this.div = function(otherV){this.x /= otherV.x; this.y /= otherV.y; if(this.z !== undefined){this.z /= otherV.z;}};
+	this.add = function(otherV){this.x += otherV.x; this.y += otherV.y;};
+	this.sub = function(otherV){this.x -= otherV.x; this.y -= otherV.y;};
+	this.mult = function(otherV){this.x *= otherV.x; this.y *= otherV.y;};
+	this.div = function(otherV){this.x /= otherV.x; this.y /= otherV.y;};
 }
 
 function dist(x1, y1, x2, y2){
 	return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
-}
-
-function pow(base, exp){
-	return Math.pow(base, exp);
-}
-
-function sqrt(num){
-	return Math.sqrt(num);
-}
-
-function sq(num){
-	return num*num;
-}
-
-function lerp(a, b, alpha){
-	return a + (b-a)*alpha;
 }
 
 function framerate(setTo){
@@ -211,7 +168,7 @@ function pColorToHex(pColor){
 function fill(clrOrR, g, b){
 	if(clrOrR === null || g === null || b === null){ctx.fillStyle = "#FFFFFF"; return;}
 	if(typeof clrOrR === "string"){ctx.fillStyle = clrOrR}
-	if(typeof clrOrR === "number" && clrOrR >= 0 && clrOrR <= 255){ctx.fillStyle = color(clrOrR, g, b);}
+	if(typeof clrOrR === "number" && clrOrR >= 0){ctx.fillStyle = color(clrOrR, g, b);}
 	if(typeof clrOrR === "number" && clrOrR < 0 && g === 0){ctx.fillStyle = pColorToHex(clrOrR);}
 	if(typeof clrOrR === "object"){ctx.fillStyle = clrOrR.color;}
 }
@@ -321,19 +278,8 @@ function ceil(e){
 function round(num){
 	return Math.round(num);
 }
-var rngSeed = 0;
-function randomSeed(n){
-	rngSeed = n;
-}
-function pushMatrix(){}
-function popMatrix(){}
-function randomSeeded(min, max){
-	var numberGenerated = ((((rngSeed + 17) * 169) / 463) % (max - min)) + min;
-	rngSeed += numberGenerated;
-	return numberGenerated;
-}
 function random(min, max){
-	return Math.random() * (max - min) + min;
+	return Math.random() * (max - min)
 }
 function sin(angle){
 	return Math.sin(angle * Math.PI/180);

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Tetrominos</title>
+    </head>
+    <body>
+        <canvas id="Canvas"></canvas>
+        <script src="canvasFuncs.js"></script>
+        
+        <script>
+            var bestScore = localStorage.getItem("BestScore");
+            if(!localStorage.getItem("BestScore")){localStorage.setItem("BestScore", 0); bestScore = 0;}
+            framerate(60);
+            var PIECES = [
+                {
+                    states: [
+                        [
+                            [0, 0, 1, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 1, 0],
+                        ],
+                        // X X O X
+                        // X X O X
+                        // X X O X
+                        // X X O X
+                        [
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                            [1, 1, 1, 1],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X X X
+                        // X X X X
+                        // O O O O
+                        // X X X X
+                        [
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                        ],
+                        // X O X X
+                        // X O X X
+                        // X O X X
+                        // X O X X
+                        [
+                            [0, 0, 0, 0],
+                            [1, 1, 1, 1],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X X X
+                        // O O O O
+                        // X X X X
+                        // X X X X
+                    ],
+                    color: new colorObj(0, 255, 255),
+                },
+                // I piece
+                {
+                    states: [
+                        [
+                            [0, 0, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 1, 1, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        [
+                            [0, 0, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 1, 1, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        [
+                            [0, 0, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 1, 1, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        [
+                            [0, 0, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 1, 1, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X X X
+                        // X O O X
+                        // X O O X
+                        // X X X X
+                    ],
+                    color: new colorObj(255, 255, 0),
+                },
+                // O piece
+                {
+                    states: [
+                        [
+                            [0, 1, 0, 0],
+                            [1, 1, 1, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O X X
+                        // O O O X
+                        // X X X X
+                        // X X X X
+                        [
+                            [0, 1, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O X X
+                        // X O O X
+                        // X O X X
+                        // X X X X
+                        [
+                            [0, 0, 0, 0],
+                            [1, 1, 1, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X X X
+                        // O O O X
+                        // X O X X
+                        // X X X X
+                        [
+                            [0, 1, 0, 0],
+                            [1, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O X X
+                        // O O X X
+                        // X O X X
+                        // X X X X
+                    ],
+                    color: new colorObj(180, 0, 180),
+                },
+                // T piece
+                {
+                    states: [
+                        [
+                            [0, 1, 1, 0],
+                            [1, 1, 0, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O O X
+                        // O O X X
+                        // X X X X
+                        // X X X X
+                        [
+                            [0, 1, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O X X
+                        // X O O X
+                        // X X O X
+                        // X X X X
+                        [
+                            [0, 0, 0, 0],
+                            [0, 1, 1, 0],
+                            [1, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X X X
+                        // X O O X
+                        // O O X X
+                        // X X X X
+                        [
+                            [1, 0, 0, 0],
+                            [1, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // O X X X
+                        // O O X X
+                        // X O X X
+                        // X X X X
+                    ],
+                    color: new colorObj(0, 255, 0),
+                },
+                // S piece
+                {
+                    states: [
+                        [
+                            [1, 1, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // O O X X
+                        // X O O X
+                        // X X X X
+                        // X X X X
+                        [
+                            [0, 0, 1, 0],
+                            [0, 1, 1, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X O X
+                        // X O O X
+                        // X O X X
+                        // X X X X
+                        [
+                            [0, 0, 0, 0],
+                            [1, 1, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X X X
+                        // O O X X
+                        // X O O X
+                        // X X X X
+                        [
+                            [0, 1, 0, 0],
+                            [1, 1, 0, 0],
+                            [1, 0, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O X X
+                        // O O X X
+                        // O X X X
+                        // X X X X
+                    ],
+                    color: new colorObj(255, 0, 0),
+                },
+                // Z piece
+                {
+                    states: [
+                        [
+                            [0, 0, 1, 0],
+                            [1, 1, 1, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X O X
+                        // O O O X
+                        // X X X X
+                        // X X X X
+                        [
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 1, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O X X
+                        // X O X X
+                        // X O O X
+                        // X X X X
+                        [
+                            [0, 0, 0, 0],
+                            [1, 1, 1, 0],
+                            [1, 0, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X X X
+                        // O O O X
+                        // O X X X
+                        // X X X X
+                        [
+                            [1, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // O O X X
+                        // X O X X
+                        // X O X X
+                        // X X X X
+                    ],
+                    color: new colorObj(255, 127, 0),
+                },
+                // L piece
+                {
+                    states: [
+                        [
+                            [0, 0, 0, 0],
+                            [1, 1, 1, 0],
+                            [0, 0, 1, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X X X X
+                        // O O O X
+                        // X X O X
+                        // X X X X
+                        [
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [1, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O X X
+                        // X O X X
+                        // O O X X
+                        // X X X X
+                        [
+                            [1, 0, 0, 0],
+                            [1, 1, 1, 0],
+                            [0, 0, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // O X X X
+                        // O O O X
+                        // X X X X
+                        // X X X X
+                        [
+                            [0, 1, 1, 0],
+                            [0, 1, 0, 0],
+                            [0, 1, 0, 0],
+                            [0, 0, 0, 0],
+                        ],
+                        // X O O X
+                        // X O X X
+                        // X O X X
+                        // X X X X
+                    ],
+                    color: new colorObj(0, 0, 255),
+                },
+                // J piece
+            ];
+            
+            var bag = [];
+            var nextBag = [];
+            for(var i = 0; i < PIECES.length; ++i){
+                bag.push(i)
+                nextBag.push(i)
+            }
+            bag.sort(function(){return Math.random() - 0.5;})
+            nextBag.sort(function(){return Math.random() - 0.5;})
+            var elInBag = 0
+            var currentPiece = {
+                type: bag[elInBag],
+                rotation: 0,
+                position: new PVector(3, 3),
+                touchingBoard: function(){
+                    for(var i = 0; i < thething.length; ++i){
+                        for(var j = 0; j < thething[i].length; ++j){
+                            if(thething[i][j]){
+                                if(i + currentPiece.position.x < 0|| i + currentPiece.position.x >= board.length || j + currentPiece.position.y >= board[i].length || board[i + currentPiece.position.x][j + currentPiece.position.y] !== -1){
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                },
+                ifTouchingBoard: function(functionOnTouch){
+                    var touchingBoard = currentPiece.touchingBoard();
+                    if(touchingBoard){
+                        functionOnTouch();
+                        return true;
+                    }
+                    return false;
+                },
+            };
+            
+            var held = -1;
+            var swapped = false;
+
+            var timeToMove = 36;
+            var pieceMovementTimer = timeToMove;
+            var lines = 0;
+            var level = 0;
+
+            var thething = PIECES[currentPiece.type].states[currentPiece.rotation]
+            var board = [];
+
+            var BOARD_WIDTH = 10;
+            var BOARD_HEIGHT = 20;
+
+            for(var i = 0; i < BOARD_WIDTH; ++i){
+                board.push([]);
+                for(var j = 0; j < BOARD_HEIGHT; ++j){
+                    board[i].push(-1);
+                }
+            }
+
+            function clearLines(){
+                var lineIsFull = true;
+                for(var j = 0; j < BOARD_HEIGHT; ++j){
+                    lineIsFull = true;
+                    for(var i = 0; i < BOARD_WIDTH; ++i){
+                        if(board[i][j] === -1){
+                            lineIsFull = false;
+                        }
+                    }
+                    if(lineIsFull){
+                        for(var i2 = 0; i2 < BOARD_WIDTH; ++i2){
+                            for(var j2 = j; j2 > 0; --j2){
+                                board[i2][j2] = board[i2][j2 - 1];
+                            }
+                        }
+                        ++lines;
+                        if(lines >= 10){
+                            ++level;
+                            lines = 0;
+                            timeToMove *= 0.9;
+                        }
+                    }
+                }
+            }
+
+            function drawHardDropPlacePosition(){
+                var actualPos = new PVector(currentPiece.position.x, currentPiece.position.y);
+
+                var hitPiece = false;
+                while(!hitPiece){
+                    ++currentPiece.position.y;
+                    hitPiece = currentPiece.touchingBoard();
+                }
+                --currentPiece.position.y;
+                //var newR = lerp(PIECES[currentPiece.type].color.r, 255, 0.5)
+                //var newG = lerp(PIECES[currentPiece.type].color.g, 255, 0.5)
+                //var newB = lerp(PIECES[currentPiece.type].color.b, 255, 0.5)
+                var clr = PIECES[currentPiece.type].color;
+                fill(floor(lerp(clr.r, 255, 0.5)), floor(lerp(clr.g, 255, 0.5)), floor(lerp(clr.b, 255, 0.5)));
+                for(var i = 0; i < thething.length; ++i){
+                    for(var j = 0; j < thething[i].length; ++j){
+                        if(thething[i][j]){
+                            rect((currentPiece.position.x + i) * 20, (currentPiece.position.y + j) * 20, 20, 20)
+                        }
+                    }  
+                }
+                currentPiece.position.x = actualPos.x;
+                currentPiece.position.y = actualPos.y;
+            }
+
+            var tooFar = false;
+
+            function draw(){
+                if(!tooFar){
+                    translate(300, 50)
+                    if(inputStart.c && !swapped){
+                        var swapActive = currentPiece.type;
+                        if(held !== -1){
+                            currentPiece.type = held;
+                        } else {
+                            currentPiece.position.x = 3;
+                            currentPiece.position.y = 3;
+                            //currentPiece.type = floor(random(0, PIECES.length));
+                            ++elInBag;
+                            currentPiece.type = bag[elInBag];
+                            if(elInBag >= bag.length){
+                                elInBag = 0;
+                                for(var i = 0; i < nextBag.length; ++i){
+                                    bag[i] = nextBag[i];
+                                }
+                                nextBag.sort(function(){return Math.random() - 0.5;})
+                                currentPiece.type = bag[elInBag]
+                            }
+                            thething = PIECES[currentPiece.type].states[currentPiece.rotation]
+                        }
+                        held = swapActive;
+                        currentPiece.position.x = 3;
+                        currentPiece.position.y = 3;
+                        swapped = true;
+                        thething = PIECES[currentPiece.type].states[currentPiece.rotation]
+                    }
+
+                    --pieceMovementTimer
+                    if(pieceMovementTimer <= 0){
+                        pieceMovementTimer = timeToMove;
+                        ++currentPiece.position.y;
+                    }
+                    
+                    background(0, 0, 0);
+                    for(var i = 0; i < BOARD_WIDTH; ++i){
+                        for(var j = 0; j < BOARD_HEIGHT; ++j){
+                            if(board[i][j] !== -1){
+                                fill(PIECES[board[i][j]].color);
+                                rect(i * 20, j * 20, 20, 20)
+                            } else {
+                                fill(255, 255, 255)
+                                rect(i * 20, j * 20, 20, 20);
+                            }
+                        }
+                    }
+                    if(held !== -1){
+                        fill(PIECES[held].color);
+                        var heldPiece = PIECES[held].states[0];
+                        for(var i = 0; i < heldPiece.length; ++i){
+                            for(var j = 0; j < heldPiece[i].length; ++j){
+                                if(heldPiece[i][j]){
+                                    rect(i * 20 + (-5 * 20), j * 20 + 50, 20, 20)
+                                }
+                            }
+                        }
+                    }
+                    for(var n = 0; n < bag.length; ++n){
+                        var elInNextBag = (n + elInBag + 1) - bag.length;
+                        var thisPiece;
+                        if(elInNextBag < 0){
+                            thisPiece = PIECES[bag[n + elInBag + 1]].states[0];
+                            fill(PIECES[bag[n + elInBag + 1]].color)
+                        } else {
+                            thisPiece = PIECES[nextBag[elInNextBag]].states[0];
+                            fill(PIECES[nextBag[elInNextBag]].color)  
+                        }
+                        for(var i = 0; i < thisPiece.length; ++i){
+                            for(var j = 0; j < thisPiece[i].length; ++j){
+                                if(thisPiece[i][j]){
+                                    rect(i * 10 + (BOARD_WIDTH * 20) + (5 * 20), j * 10 + 50 + (n * 50), 10, 10)
+                                }
+                            }
+                        }
+                    }
+                    if(inputStart[" "]){
+                        var hitPiece = false;
+                        while(!hitPiece){
+                            ++currentPiece.position.y;
+                            hitPiece = currentPiece.touchingBoard();
+                        }
+                        --currentPiece.position.y;
+                        for(var i = 0; i < thething.length; ++i){
+                            for(var j = 0; j < thething[i].length; ++j){
+                                if(thething[i][j] && i + currentPiece.position.x >= 0 && i + currentPiece.position.x < BOARD_WIDTH && thething[i][j]){
+                                    board[i + currentPiece.position.x][j + currentPiece.position.y] = currentPiece.type;
+                                }
+                            }
+                        }
+                        
+                        currentPiece.position.x = 3;
+                        currentPiece.position.y = 3;
+                        //currentPiece.type = floor(random(0, PIECES.length));
+                        ++elInBag;
+                        currentPiece.type = bag[elInBag];
+                        if(elInBag >= bag.length){
+                            elInBag = 0;
+                            for(var i = 0; i < nextBag.length; ++i){
+                                bag[i] = nextBag[i];
+                            }
+                            nextBag.sort(function(){return Math.random() - 0.5;})
+                            currentPiece.type = bag[elInBag]
+                        }
+                        thething = PIECES[currentPiece.type].states[currentPiece.rotation]
+                        swapped = false;
+                        clearLines();
+                    }
+
+                    drawHardDropPlacePosition();
+
+                    if(inputStart.ArrowRight){
+                        ++currentPiece.position.x;
+                        var invalid = currentPiece.touchingBoard();
+                        if(invalid){--currentPiece.position.x;}
+                    }
+                    if(inputStart.ArrowLeft){
+                        --currentPiece.position.x;
+                        var invalid = currentPiece.touchingBoard();
+                        if(invalid){++currentPiece.position.x;}
+                    }
+                    if(inputStart.ArrowDown){
+                        ++currentPiece.position.y;
+                        pieceMovementTimer = timeToMove;
+                    }
+                    if(inputStart.ArrowUp){
+                        --currentPiece.rotation;
+                        if(currentPiece.rotation >= PIECES[currentPiece.type].states.length){
+                            currentPiece.rotation -= PIECES[currentPiece.type].states.length;
+                        }
+                        if(currentPiece.rotation < 0){
+                            currentPiece.rotation += PIECES[currentPiece.type].states.length;
+                        }
+                        thething = PIECES[currentPiece.type].states[currentPiece.rotation]
+                        var invalid = currentPiece.touchingBoard();
+                        if(invalid){++currentPiece.rotation;}
+                        
+                        if(currentPiece.rotation >= PIECES[currentPiece.type].states.length){
+                            currentPiece.rotation -= PIECES[currentPiece.type].states.length;
+                        }
+                        if(currentPiece.rotation < 0){
+                            currentPiece.rotation += PIECES[currentPiece.type].states.length;
+                        }
+                    }
+                    thething = PIECES[currentPiece.type].states[currentPiece.rotation]
+                    var touchingPiece = false;
+                    fill(PIECES[currentPiece.type].color);
+                    for(var i = 0; i < thething.length; ++i){
+                        for(var j = 0; j < thething[i].length; ++j){
+                            if(thething[i][j]){
+                                var a = thething[i][j];
+                                if(j >= board[i].length || board[i + currentPiece.position.x][j + currentPiece.position.y] !== -1){
+                                    touchingPiece = true;
+                                } else {
+                                    rect((currentPiece.position.x + i) * 20, (currentPiece.position.y + j) * 20, 20, 20)
+                                }
+                            }
+                        }  
+                    }
+
+                    if(touchingPiece){
+                        touchingPiece = false;
+                        var notTouching = false;
+                        while(!notTouching){
+                            --currentPiece.position.y;
+                            if(currentPiece.position.y < 0){tooFar = true; if((lines + (level * 10)) > localStorage.getItem("BestScore")){localStorage.setItem("BestScore", lines + (level * 10))}; break;}
+                            notTouching = !currentPiece.touchingBoard();
+                        }
+                        if(!tooFar){
+                        for(var i = 0; i < thething.length; ++i){
+                            for(var j = 0; j < thething[i].length; ++j){
+                                if(thething[i][j] && i + currentPiece.position.x >= 0 && i + currentPiece.position.x < BOARD_WIDTH && thething[i][j]){
+                                    board[i + currentPiece.position.x][j + currentPiece.position.y] = currentPiece.type;
+                                }
+                            }
+                        }
+
+                        currentPiece.position.x = 3;
+                        currentPiece.position.y = 3;
+                        //currentPiece.type = floor(random(0, PIECES.length));
+                        ++elInBag;
+                        currentPiece.type = bag[elInBag];
+                        if(elInBag >= bag.length){
+                            elInBag = 0;
+                            for(var i = 0; i < nextBag.length; ++i){
+                                bag[i] = nextBag[i];
+                            }
+                            nextBag.sort(function(){return Math.random() - 0.5;})
+                            currentPiece.type = bag[elInBag]
+                        }
+                        thething = PIECES[currentPiece.type].states[currentPiece.rotation]
+                        swapped = false;
+                        clearLines();
+                        }
+                    }
+                    fill(0, 0, 0)
+                    fontSize(20);
+                    fillText(lines + level * 10, 10, 50);
+                } else {
+                    background(128, 128, 128)
+                    translate(0, 0)
+                    fill(255, 255, 255)
+                    fontSize(50);
+                    fillText("YOU LOSE JACKASS", 10, 100)
+                    fontSize(25)
+                    fillText("Lines: " + (lines + (level * 10)) + "     Best Lines: " + bestScore, 10, 150);
+                    fontSize(15);
+                    fillText((function(){
+                        if(lines + (level * 10) > bestScore){
+                            return "You got " + ((lines + (level * 10)) - bestScore) + " more lines than your previous best!";
+                        } else if (lines + (level * 10) < bestScore) {
+                            return "You need " + (bestScore -(lines + (level * 10))) + " more lines to beat your previous best...";
+                        } else {
+                            return "You tied your best score!";
+                        }
+                    })(), 10, 170)
+                }
+            }
+        </script>
+    </body>
+</html>
