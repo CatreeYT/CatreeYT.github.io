@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Platformer</title>
+        <style>
+            #Canvas {
+                position: absolute;
+                left: 0px;
+                top: 0px;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+		<script src="../canvasFuncs.js"></script>
+        <script src="3D Renderer.js"></script>
+        <script src="models.js"></script>
+        <script>
+			function splitLines(str){ return str.split(/\r?\n/);}
+            function splitSpace(str){ return str.split(" ");}
+            var testStr = testCubeModel;
+            var lineData = splitLines(testStr);
+            var lines = lineData.length;
+            var verts = [];
+            for(var i = 0; i < lines; ++i){
+                var spaceArr = splitSpace(lineData[i]);
+                if(spaceArr[0] === "v"){
+                    verts.push({data: new vector3(spaceArr[1], spaceArr[2], spaceArr[3]), indexType: 'v'});
+                }
+                if(spaceArr[0] === "f"){
+                    verts.push({data: [spaceArr[1], spaceArr[2], spaceArr[3]], indexType: 'f'});
+                }
+            }
+            println(verts);
+
+            var test = new cFrame(0, 0, 150, 0, 0, 0);
+            var test2= new vector3(10, 10, 10);
+            draw = function() {
+                background(255, 255, 255);
+                stroke(255, 0, 0);
+                if(pressing.ArrowUp){cam.position.y -= 2;}
+                if(pressing.ArrowDown){cam.position.y += 2;}
+                if(pressing.ArrowRight){cam.rotation.y += 2;}
+                if(pressing.ArrowLeft){cam.rotation.y -= 2;}
+                if(pressing.w){
+                    cam.position.x += sin(cam.rotation.y) * 2;
+                    cam.position.z += cos(cam.rotation.y) * 2;
+                }
+                if(pressing.s){
+                    cam.position.x -= sin(cam.rotation.y) * 2;
+                    cam.position.z -= cos(cam.rotation.y) * 2;
+                }
+                if(pressing.a){
+                    cam.position.x += sin(cam.rotation.y - 90) * 2;
+                    cam.position.z += cos(cam.rotation.y - 90) * 2;
+                }
+                if(pressing.d){
+                    cam.position.x += sin(cam.rotation.y + 90) * 2;
+                    cam.position.z += cos(cam.rotation.y + 90) * 2;
+                }
+                if(pressing.z){camUpAngle -= 2;}
+                if(pressing.x){camUpAngle += 2;}
+                cam.rotation.z = sin(cam.rotation.y) * camUpAngle;
+                cam.rotation.x = cos(cam.rotation.y) * camUpAngle;
+                fill(255, 0, 0);
+                cubeCF(test, test2);
+                fill(0, 255, 238);
+                drawCube(0, 90, 71, 10, 30, 10, -71, 78, 36);
+                fill(0, 0, 0)
+                renderModel(100, 0, 0, 0, 0, 0, verts);
+                renderFrame();
+            };
+		</script>
+    </body>
+</html>

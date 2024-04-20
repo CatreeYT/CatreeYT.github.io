@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>New Game</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script src="3DRenderer.js"></script>
+		<script src="3DFPS.js"></script>
+<script>
+function ground(x, y, z, l, w, h){
+    z -= 300
+    fill("#9e4200")
+    drawCuboid(-x, y + 4, -(z + 300) - 300, l, w, h - 4, 0, 0, 0);
+    fill("#00FF00")
+    drawCuboid(-x, y - h + 4, -(z + 300) - 300, l, w, 4, 0, 0, 0)
+    if(
+        touching(x - l, z + 300 - w, l*2, w*2, camPosX - player.l, camPosZ - player.w, player.l*2, player.w*2) &&
+        camPosY + h > -y - player.h &&
+        camPosY - h < -y + player.h
+        ){
+        player.fs = 0;
+        camPosY += 1.5;
+        player.cJ = true;
+    }
+}
+
+var player = {
+    l: 15,
+    w: 15,
+    h: 120,
+    fs: 0,
+    cJ: false,
+};
+function keyDown(e){
+    if(e === " "){
+        if(player.cJ){
+            player.fs = -8
+        }
+    }
+}
+
+borderWidth = width;
+borderHeight = height;
+
+draw = function() {
+
+    if(player.fs > 1 || player.fs < -1){player.cJ = false;}
+
+    if(pressing.Shift){playerSpeed = 4;} else {playerSpeed = 2;}
+
+    player.fs += 0.25;
+    camPosY -= player.fs;
+
+    background("#444444");
+    ctx.strokeStyle = "#FFFFFF";
+    writeText(player.cJ, 10, 10);
+    fill("#CCCC00")
+    ground(0, 200, 0, 100, 100, 30);
+    ground(300, 200, 100, 100, 100, 30);
+
+	drawShapes();
+	fill("#000000");
+	rect(borderWidth, 0, width, height);
+	rect(0, borderHeight, width, height);
+};
+
+		</script>
+    </body>
+</html>

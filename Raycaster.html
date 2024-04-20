@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Raycaster</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+			img {
+				pointer-events: none;
+				position: absolute;
+			}
+			
+			* {
+				cursor: none;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script>
+		canvas.addEventListener("click", async () => {
+		  await canvas.requestPointerLock({
+			unadjustedMovement: true,
+		  });
+		});
+		
+		
+			function average(numbers){
+    if(numbers.length !== 0){
+        var addedNums = 0;
+        for(var i = 0; i < numbers.length; ++i){
+            addedNums += numbers[i];
+        }
+        return addedNums / numbers.length;
+    } else {
+        return 0;
+    }
+}
+
+function intersects(a,b,c,d,p,q,r,s) {
+  var det, gamma, lambda;
+  det = (c - a) * (s - q) - (r - p) * (d - b);
+  if (det === 0) {
+    return false;
+  } else {
+    lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
+    gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
+    return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+  }
+}
+
+function shapeWithCollision(x, y, lines){
+    this.x = x;
+    this.y = y;
+    this.lines = lines;
+    this.draw = function() {
+        for(var i = 0; i < lines.length; ++i){
+        if(i !== lines.length - 1){
+            line(this.lines[i].x + this.x, this.lines[i].y + this.y, this.lines[i + 1].x + this.x, this.lines[i + 1].y + this.y);
+        } else {
+            line(this.lines[i].x + this.x, this.lines[i].y + this.y, lines[0].x + this.x, lines[0].y + this.y);
+        }
+    }
+    };
+    
+    this.intersectsWith = function(otherShape){
+        for(var i = 0; i < this.lines.length; ++i){
+            var curLine = {
+                s: new PVector(this.lines[i].x + this.x, this.lines[i].y + this.y),
+                e: null
+            };
+            if(i === this.lines.length - 1){
+                curLine.e = new PVector(this.lines[0].x + this.x, this.lines[0].y + this.y);
+            } else {
+                curLine.e = new PVector(this.lines[i+1].x + this.x, this.lines[i+1].y + this.y);
+            }
+            
+            for(var j = 0; j < otherShape.lines.length; ++j){
+                var otherLine = {
+                    s: new PVector(otherShape.lines[j].x + otherShape.x, otherShape.lines[j].y + otherShape.y),
+                    e: null
+                };
+                
+                if(j === otherShape.lines.length - 1){
+                    otherLine.e = new PVector(otherShape.lines[0].x + otherShape.x, otherShape.lines[0].y + otherShape.y);
+                } else {
+                    otherLine.e = new PVector(otherShape.lines[j+1].x + otherShape.x, otherShape.lines[j+1].y + otherShape.y);
+                }
+                if(intersects(curLine.s.x, curLine.s.y, curLine.e.x, curLine.e.y, otherLine.s.x, otherLine.s.y, otherLine.e.x, otherLine.e.y)){return true;}
+            }
+        }
+        return false;
+    };
+    
+}
+
+var plr = new shapeWithCollision(202, 134, [new PVector(0, 0), new PVector(20, 0), new PVector(20, 20), new PVector(0, 20)]);
+
+var fs = 0;
+var cJ = false;
+
+function ground(x, y, lines){
+    var thisShape = new shapeWithCollision(x, y, lines);
+    if(thisShape.intersectsWith(plr)){
+        plr.y -= 0.5;
+        cJ = true;
+        fs = 0;
+    }
+}
+
+var walls = [
+        new shapeWithCollision(77, 180, [new PVector(62, -50), new PVector(0, 60), new PVector(60, 60)]),
+        new shapeWithCollision(0, 0, [new PVector(43, 38), new PVector(128, 12), new PVector(314, 44), new PVector(355, 120), new PVector(327, 297), new PVector(119, 322), new PVector(9, 254),]),
+        new shapeWithCollision(215, 145, [new PVector(-32, -9), new PVector(0, 47), new PVector(60, 60)]),
+        new shapeWithCollision(189, 214, [new PVector(85, -9), new PVector(0, 47), new PVector(60, 60)]),
+        new shapeWithCollision(136, 51, [new PVector(45, 7), new PVector(16, 19), new PVector(29, 51), new PVector(62, 43), new PVector(87, 27)]),
+        new shapeWithCollision(231, 104, [new PVector(53, 0), new PVector(57, 23), new PVector(37, 51), new PVector(61, 51), new PVector(87, 27)]),
+        new shapeWithCollision(13, 104, [new PVector(89, 0), new PVector(35, 23), new PVector(37, 51), new PVector(61, 76), new PVector(87, 27)]),
+    ];
+
+var drawCasts = true;
+
+function raycast(x, y, ang, maxDist, precision){
+    var ray = new shapeWithCollision(x, y, [new PVector(0, 0), new PVector(sin(ang) * maxDist, cos(ang) * maxDist)]);
+    
+    var p2check = new PVector(ray.lines[1].x, ray.lines[1].y);
+    
+    var testingRay = new shapeWithCollision(ray.x, ray.y, [new PVector(0, 0), p2check]);
+	
+	var touchingWall = false;
+	for(var i = 0; i < walls.length; ++i){
+		if(walls[i].intersectsWith(testingRay)){touchingWall = true;}
+	}
+	
+    if(touchingWall){
+        while(touchingWall){
+            p2check.x = average([ray.lines[0].x, p2check.x]);
+            p2check.y = average([ray.lines[0].y, p2check.y]);
+			touchingWall = false;
+			for(var i = 0; i < walls.length; ++i){
+				if(walls[i].intersectsWith(testingRay)){touchingWall = true;}
+			}
+        } 
+        while(!touchingWall){
+            p2check.x += sin(ang) * precision;
+            p2check.y += cos(ang) * precision;
+			touchingWall = false;
+			for(var i = 0; i < walls.length; ++i){
+				if(walls[i].intersectsWith(testingRay)){touchingWall = true;}
+			}
+        }
+    }
+    if(drawCasts){
+        testingRay.draw();
+    }
+    return p2check;
+}
+var ang = 0;
+
+var casts = [];
+var player = new PVector(200, 200);
+
+var plrCollision = new shapeWithCollision(player.x, player.y, [new PVector(-10, -10), new PVector(10, -10), new PVector(10, 10), new PVector(-10, 10)]);
+
+for(var i = 0; i < 210; ++i){
+	casts.push(raycast(player.x, player.y, ang + i/3, 600, 3));
+}
+
+var pmx = mouseX;
+
+var mxChange = 0;
+
+var camY = 0;
+function mouseMoved(e){
+	mxChange = e.movementX;
+	ang += mxChange / 10;
+	camY += e.movementY;
+	if(camY > 800){camY = 800;}
+	if(camY < -800){camY = -800;}
+}
+
+draw = function() {
+    background("#CCCCCC");
+    plrCollision.x = player.x;
+	plrCollision.y = player.y;
+    for(var i = 0; i < casts.length; ++i){
+        casts[i] = raycast(player.x, player.y, ang + i/3, 600, 1);
+    }
+    
+    if(pressing.ArrowRight){
+        ang += 1.5;
+    }
+    if(pressing.ArrowLeft){
+        ang -= 1.5;
+    }
+		
+	if(pressing.a){
+		let willTouchWall = false;
+		
+		for(var i = 0; i < walls.length; ++i){
+			if(walls[i].intersectsWith(
+			new shapeWithCollision(player.x + sin(ang + 35 - 90), player.y + cos(ang + 35 - 90), [new PVector(-10, -10), new PVector(10, -10), new PVector(10, 10), new PVector(-10, 10)])
+			)){willTouchWall = true;}
+		}
+		if(!willTouchWall){
+		player.x += sin(ang + 35 - 90);
+		player.y += cos(ang + 35 - 90);
+		}
+	}
+	if(pressing.d){
+		let willTouchWall = false;
+		
+		for(var i = 0; i < walls.length; ++i){
+			if(walls[i].intersectsWith(
+			new shapeWithCollision(player.x + sin(ang + 35 + 90), player.y + cos(ang + 35 + 90), [new PVector(-10, -10), new PVector(10, -10), new PVector(10, 10), new PVector(-10, 10)])
+			)){willTouchWall = true;}
+		}
+		if(!willTouchWall){
+		player.x += sin(ang + 35 + 90);
+		player.y += cos(ang + 35 + 90);
+		}
+	}
+	if(pressing.w){
+		let willTouchWall = false;
+		
+		for(var i = 0; i < walls.length; ++i){
+			if(walls[i].intersectsWith(
+			new shapeWithCollision(player.x + sin(ang + 35), player.y + cos(ang + 35), [new PVector(-10, -10), new PVector(10, -10), new PVector(10, 10), new PVector(-10, 10)])
+			)){willTouchWall = true;}
+		}
+		if(!willTouchWall){
+		player.x += sin(ang + 35);
+		player.y += cos(ang + 35);
+		}
+	}
+	if(pressing.s){
+		let willTouchWall = false;
+		
+		for(var i = 0; i < walls.length; ++i){
+			if(walls[i].intersectsWith(
+			new shapeWithCollision(player.x - sin(ang + 35), player.y - cos(ang + 35), [new PVector(-10, -10), new PVector(10, -10), new PVector(10, 10), new PVector(-10, 10)])
+			)){willTouchWall = true;}
+		}
+		if(!willTouchWall){
+		player.x -= sin(ang + 35);
+		player.y -= cos(ang + 35);
+		}
+	}
+	if(pressing.ArrowUp){
+		player.x += sin(ang + 35);
+		player.y += cos(ang + 35);
+	}
+	if(pressing.ArrowDown){
+		player.x -= sin(ang + 35);
+		player.y -= cos(ang + 35);
+	}
+	
+	background("#CCCCCC");
+	let FOV = casts.length;
+	for(var i = 0; i < FOV; ++i){
+			let cDist = dist(player.x, player.y, player.x + casts[i].x, player.y + casts[i].y);
+			let cHeight = 6000 / cDist;
+			
+			let gr = Math.max(0, floor(170 - cDist));
+			gr = gr.toString(16)
+			
+			if(gr.length === 1){
+				gr = "0" + gr;
+			}
+			
+			ctx.strokeStyle = "#00" + gr + gr;
+			
+			for(var j = 0; j < width/FOV; ++j){
+            line(i * (width/FOV) - (1/2 * (width/FOV)) + j, cHeight + 300 - camY, i * (width/FOV) - (1/2 * (width/FOV)) + j, -cHeight + 300 - camY);
+			}
+    }
+    fill("#9400ab");
+	rect(width / 2 - 2.5, height / 2 - 10, 5, 20);
+	rect(width / 2 - 10, height / 2 - 2.5, 20, 5);
+};
+
+		</script>
+    </body>
+</html>

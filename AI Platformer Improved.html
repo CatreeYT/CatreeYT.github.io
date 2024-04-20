@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Platformer</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+        <script>
+		
+            var canvas = document.getElementById("Canvas");
+            var ctx = canvas.getContext("2d");
+            
+			var FRAMERATE = 100
+			function frameRate(setTo){
+				FRAMERATE = setTo
+			}
+			
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight
+            
+			var width = canvas.width
+			var height = canvas.height
+			
+			var keys = {
+                w: false,
+                a: false,
+                s: false,
+                d: false,
+				r: false,
+				" ": false,
+				ArrowUp: false,
+				ArrowDown: false,
+				ArrowLeft: false,
+				ArrowRight: false,
+            }
+			
+			var mouseX
+			var mouseY
+			
+            // Functions
+			var touching = function(x, y, w, h, test_x, test_y, test_w, test_h){
+    if(test_w === undefined || test_w === null || test_w === 0){test_w = 1;}
+    if(test_h === undefined || test_h === null || test_h === 0){test_h = 1;}
+    return test_x + test_w > x /*Left*/ && test_x < x + w /*Right*/ && test_y + test_h > y /*Top*/ && test_y < y + h /*Bottom*/;
+};
+
+            function fill(color){
+                ctx.fillStyle = color
+            }
+            function rect(x, y, w, h){
+                ctx.fillRect(x, y, w, h)
+            }
+            function font(setTo){
+                ctx.font = setTo
+            }
+            function text(text, x, y){
+                ctx.strokeText(text, x, y)
+            }
+            function background(color){
+				var oldClr = ctx.fillStyle;
+				fill(color);
+				rect(0, 0, canvas.width, canvas.height)
+				fill(oldClr);
+            }
+			function floor(e){
+				return Math.floor(e)
+			}
+			function random(min, max){
+				return Math.random() * (max - min)
+			}
+			
+			var touching = function(x, y, w, h, test_x, test_y, test_w, test_h){
+    if(test_w === undefined || test_w === null || test_w === 0){test_w = 1;}
+    if(test_h === undefined || test_h === null || test_h === 0){test_h = 1;}
+if(test_x + test_w > x /*Left*/ && test_x < x + w /*Right*/ && test_y + test_h > y /*Top*/ && test_y < y + h /*Bottom*/){
+    return true;
+} else {
+return false;
+}
+};
+
+var pressing = {
+    38: false,
+    37: false,
+    39: false,
+    40: false,
+    a: false,
+    d: false
+};
+var inputStart = {
+    38: false,
+    37: false,
+    39: false,
+    40: false,
+    p: false,
+    f: false,
+    r: false,
+};
+
+var scroll = 0;
+
+var players = [];
+
+var bestIn = [];
+var clearState = false;
+var maxInputs = 10;
+
+var totalPlayers = 500;
+for(var i = 0; i < totalPlayers; ++i){
+    players.push({
+    x: 100,
+    y: 150,
+    fs: 0,
+    cJ: false,
+    inputs: [],
+    currentAward: 0
+    });
+for(var j = 0; j < maxInputs; ++j){
+    players[i].inputs.push(floor(random(0, 6)));
+    /*
+    Input List
+    ~~~~~~~~~~~~~~~
+    0: No movement
+    1: Walk Left
+    2: Walk Right
+    3: Jump Left
+    4: Jump Right
+    5: Jump
+    */
+}
+bestIn = players[i].inputs.slice();
+}
+
+var bestAward = 0;
+
+var generation = 1;
+
+var currentInput = 0;
+var framesUntilNextInput = 20;
+
+function initializeAIs(){
+            players = [];
+
+bestIn = [];
+clearState = false;
+maxInputs = 10;
+for(var i = 0; i < totalPlayers; ++i){
+    players.push({
+    x: 100,
+    y: 150,
+    fs: 0,
+    cJ: false,
+    inputs: [],
+    currentAward: 0
+    });
+for(var j = 0; j < maxInputs; ++j){
+    players[i].inputs.push(floor(random(0, 6)));
+    /*
+    Input List
+    ~~~~~~~~~~~~~~~
+    0: No movement
+    1: Walk Left
+    2: Walk Right
+    3: Jump Left
+    4: Jump Right
+    5: Jump
+    */
+}
+bestIn = players[i].inputs.slice();
+}
+
+bestAward = 0;
+
+generation = 1;
+
+currentInput = 0;
+framesUntilNextInput = 20;
+}
+
+
+function group(x, y, w, h, block){
+    for(var i = 0; i < w; ++i){
+        for(var j = 0; j< h; ++j){
+            block(x + i, y + j);
+        } 
+    }
+}
+
+function ground(x, y){
+    x *= 20;
+    y *= 20;
+    fill("#0DFF00");
+    rect(x, y, 20, 20);
+    
+    for(var i = 0; i < players.length; ++i){
+        if(touching(x, y, 20, 20, players[i].x, players[i].y, 20, 20)){
+            players[i].y -= 0.3;
+            players[i].fs = 0;
+            players[i].cJ = true;
+        }
+    }
+}
+function dirt(x, y){
+    x *= 20;
+    y *= 20;
+    fill("#855600");
+    rect(x, y, 20, 20);
+    
+    for(var i = 0; i < players.length; ++i){
+        if(touching(x, y, 20, 20, players[i].x, players[i].y, 20, 20)){
+            if(players[i].inputs[currentInput] === (1 || 3)){
+                players[i].x += 1.8;
+            }
+            if(players[i].inputs[currentInput] === (2 || 4)){
+                players[i].x -= 1.8;
+            }
+        }
+    }
+}
+function death(x, y){
+    x *= 20;
+    y *= 20;
+    fill("#ffb700");
+    rect(x, y, 20, 20);
+    
+    for(var i = 0; i < players.length; ++i){
+        if(touching(x, y, 20, 20, players[i].x, players[i].y, 20, 20)){
+            players[i] = {
+            x: 100,
+            y: 150,
+            fs: 0,
+            cJ: false,
+            inputs: players[i].inputs,
+            currentAward: players[i].currentAward
+            };
+        }
+    }
+}
+function bounce(x, y){
+    x *= 20;
+    y *= 20;
+    fill("#ff00ff");
+    rect(x, y, 20, 20);
+    
+    for(var i = 0; i < players.length; ++i){
+        if(touching(x, y, 20, 20, players[i].x, players[i].y, 20, 20)){
+            players[i].fs = -4.5;
+        }
+    }
+}
+
+var simulating = true;
+var Fast_Forward = true;
+var level = 1;
+var levelVictoryScore = [
+        400,
+        400,
+        400,
+        800,
+        800,
+        400,
+    ];
+function handleAIinputs(){
+	for(var i = 0; i < players.length; ++i){
+        var thisPlr = players[i];
+        if(thisPlr.inputs[currentInput] === 1){thisPlr.x -= 1.5;}
+        if(thisPlr.inputs[currentInput] === 2){thisPlr.x += 1.5;}
+        if(thisPlr.inputs[currentInput] === 3 && thisPlr.cJ){
+        thisPlr.fs = -3;
+        }
+        if(thisPlr.inputs[currentInput] === 3){
+        thisPlr.x -= 1.5;
+        }
+        if(thisPlr.inputs[currentInput] === 4 && thisPlr.cJ){
+        thisPlr.fs = -3;
+        }
+        if(thisPlr.inputs[currentInput] === 4){
+        thisPlr.x += 1.5;
+        }
+        if(thisPlr.inputs[currentInput] === 5 && thisPlr.cJ){
+        thisPlr.fs = -3;
+        }
+    }
+}	
+	
+function handleInputs(){
+    if(inputStart.p){
+        simulating = !simulating;
+    }
+    if(inputStart.f){
+        Fast_Forward = !Fast_Forward;
+        if(Fast_Forward){
+		frameRate(12000);
+	} else {
+		frameRate(120);
+	}
+	}
+    if(inputStart.r){
+        initializeAIs();
+    }
+    if(inputStart["39"]){
+        ++level;
+        initializeAIs();
+    }
+    if(inputStart["37"]){
+        --level;
+        initializeAIs();
+    }
+    if(pressing.d){
+        scroll -= 2;
+    }
+    if(pressing.a){
+        scroll += 2;
+    }
+}
+function drawLv(lv){
+    if(lv === undefined){lv = level;}
+    
+    switch(lv){
+        case 1:
+            group(0, 12, 8, 1, ground);
+            group(17, 12, 6, 1, ground);
+            group(8, 11, 9, 2, dirt);
+            group(8, 10, 9, 1, ground);
+            death(10, 9);
+            death(14, 9);
+        break;
+        case 2:
+            group(0, 11, 10, 1, ground);
+            group(15, 11, 8, 1, ground);
+            group(12, 7, 1, 4, death);
+            group(10, 13, 5, 1, ground);
+            group(0, 12, 10, 2, dirt);
+            group(15, 12, 5, 2, dirt);
+        break;
+        case 3:
+            group(0, 11, 10, 1, ground);
+            group(15, 11, 8, 1, ground);
+            group(10, 11, 5, 2, death);
+            group(10, 13, 5, 1, ground);
+            group(0, 12, 10, 2, dirt);
+            group(15, 12, 5, 2, dirt);
+            ground(12, 10);
+        break;
+        case 4:
+            group(0, 11, 11, 1, ground);
+            ground(13, 11);
+            ground(16, 10);
+            ground(19, 9);
+            ground(24, 11);
+            group(28, 11, 9, 1, ground);
+            group(39, 11, 1, 1, ground);
+            group(37, 11, 2, 1, death);
+            ground(32, 10);
+            ground(33, 10);
+            death(31, 10);
+            death(34, 10);
+        break;
+        case 5:
+            group(0, 11, 9, 1, ground);
+            group(0, 12, 9, 3, dirt);
+            ground(8, 10);
+            ground(11, 9);
+            group(14, 7, 4, 1, ground);
+            ground(21, 7);
+            group(25, 7, 4, 1, ground);
+            group(32, 5, 1, 3, death);
+            group(29, 12, 4, 1, ground);
+            group(25, 8, 4, 5, dirt);
+            ground(35, 13);
+            group(38, 11, 2, 1, ground);
+        break;
+        case 6:
+            group(0, 9, 20, 1, ground);
+            group(0, 10, 20, 3, dirt);
+            group(0, 6, 20, 1, death);
+        break;
+    }
+}
+var randMoves = 8;
+var speedup = 1;
+frameRate(120);
+draw = function() {
+    background("#00FFFF");
+    if(scroll > 0){scroll = 0;}
+    if(scroll - width < -levelVictoryScore[level - 1]){scroll = -levelVictoryScore[level - 1] + 400;}
+	handleInputs
+    if(simulating){
+	for(var speedLoop = 0; speedLoop < speedup; ++speedLoop) {
+	handleAIinputs();
+    for(var i = 0; i < players.length; ++i){
+        players[i].currentAward = players[i].x;
+        
+        if(players[i].fs !== 0){
+            players[i].cJ = false;
+        }
+        
+        if(players[i].currentAward >= levelVictoryScore[level - 1]){
+            clearState = true;
+            framesUntilNextInput = 1;
+            currentInput = maxInputs - 1;
+        }
+        
+        if(players[i].y > height){
+            players[i] = {
+    x: 100,
+    y: 150,
+    fs: 0,
+    cJ: false,
+    inputs: players[i].inputs,
+    currentAward: 0
+    };
+        }
+        
+    }
+    
+    --framesUntilNextInput;
+    if(framesUntilNextInput === 0){
+        framesUntilNextInput = 20;
+        ++currentInput;
+        
+        if(currentInput === maxInputs){
+            ++generation;
+            if(generation % 10 === 0){maxInputs += 5;}
+            currentInput = 0;
+            for(var j = 0; j < players.length; ++j){
+            if(players[j].currentAward >= bestAward){
+                bestIn = players[j].inputs.slice();
+                bestAward = players[j].currentAward;
+            } else{
+                players[j].inputs = bestIn.slice();
+            }
+            for(var i = 0; i < randMoves; ++i){
+                players[j].inputs[floor(random(0, maxInputs))] = floor(random(0, 6));
+            }
+            players[j] = {
+            x: 100,
+            y: 150,
+            fs: 0,
+            cJ: false,
+            inputs: players[j].inputs,
+            currentAward: 0
+            };
+            
+            if(clearState){
+			speedup = 1;
+            frameRate(120);
+            players = [{
+            x: 100,
+            y: 150,
+            fs: 0,
+            cJ: false,
+            inputs: [],
+            currentAward: 0
+            }];
+                players[0].inputs = bestIn.slice();
+            }
+            
+        }
+        }
+    }
+    
+    fill("#FF0000");
+    for(var i = 0; i < players.length; ++i){
+        
+        players[i].fs += 0.09;
+        players[i].y += players[i].fs;
+        
+        rect(players[i].x, players[i].y, 20, 20);
+    }
+    drawLv();
+	}
+	}
+    drawLv();
+    inputStart = {
+    38: false,
+    37: false,
+    39: false,
+    40: false,
+    p: false,
+    f: false,
+    r: false,
+};
+};
+
+		
+            setInterval(function(){
+                 draw()
+            }, 1000 / FRAMERATE)
+            
+            document.onkeydown = function (e) {
+                pressing[e.key.toString()] = true
+				inputStart[e.keyCode.toString()] = true
+				
+				if(e.key.toString() === "ArrowUp"){
+					++speedup;
+					console.log("worked");
+				}
+				if(e.key.toString() === "ArrowDown"){
+					--speedup;
+				}
+				if(e.key.toString() === "r"){
+					initializeAIs();
+				}
+				if(e.key.toString() === "ArrowRight"){
+					++level;
+					initializeAIs();
+				}
+				if(e.key.toString() === "ArrowLeft"){
+					--level;
+					initializeAIs();
+				}
+				if(e.key.toString() === "d"){
+					scroll -= 2;
+				}
+				if(e.key.toString() === "a"){
+					scroll += 2;
+				}
+				if(e.key.toString() === "p"){
+					simulating = !simulating;
+				}
+				speedIn: if(e.key.toString() === "c"){
+					let a
+					t: while (true){
+					a = prompt("Speed to set game to:", "");
+					if(parseInt(a)){
+						break t;
+					} else if (a === "") {
+						break speedIn;
+					} else {
+						alert("Please provide a valid number")
+					}
+					}
+					let sp = parseInt(a);
+					speed(sp);
+				}
+				plrIn: if(e.key.toString() === "v"){
+					let a
+					t: while (true){
+					a = prompt("New player Count:", "");
+					if(parseInt(a)){
+						break t;
+					} else if (a === "") {
+						break plrIn;
+					} else {
+						alert("Please provide a valid number")
+					}
+					}
+					let p = parseInt(a);
+					playerCount(p);
+				}
+            };
+            document.onkeyup = function (e) {
+                pressing[e.key.toString()] = false
+            };
+            
+			document.onmousemove = function(event){
+				mouseX = event.pageX - 7
+				mouseY = event.pageY - 7
+			}
+			function speed(speedSet){
+				initializeAIs();
+				simulating = true;
+				if(speedSet < 50000){
+				console.log("Set game speed from " + speedup + " to " + speedSet + ".");
+				}
+				if(speedSet > 49999){
+					let sure;
+					t: while (true){
+					sure = prompt("Speeds above 50,000 will lag. Are you Sure? Y/N", "");
+					if(sure === "Y" || sure === "y"){
+						console.log("Set game speed from " + speedup + " to " + speedSet + ".");
+						break t;
+					} else if (sure === "N" || sure === "n"){
+						console.log("Terminated");
+						break t;
+					}
+					}
+					
+				}
+				speedup = speedSet;
+			}
+			function playerCount(plrs){
+				simulating = true;
+				if(plrs <= 500){
+				console.log("Set total players from " + totalPlayers + " to " + plrs + ".");
+				}
+				if(plrs >= 500){
+					let sure;
+					t: while (true){
+					sure = prompt("Player Counts above 500 will lag. Are you Sure? Y/N", "");
+					if(sure === "Y" || sure === "y"){
+						console.log("Set player count from " + totalPlayers + " to " + plrs + ".");
+						break t;
+					} else if (sure === "N" || sure === "n"){
+						console.log("Terminated");
+						break t;
+					}
+					}
+					
+				}
+				totalPlayers = plrs;
+				initializeAIs();
+			}
+		</script>
+        
+    </body>
+</html>

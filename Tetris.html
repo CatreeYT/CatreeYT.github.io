@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Wow cool</title>
+        <style>
+            #Canvas {
+                position: absolute;
+                top: 0px;
+                left: 0px;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="Canvas"></canvas>
+        <script src="canvasFuncs.js"></script>
+        <script>
+             var board = [];
+var colorMap = [];
+var curPiece = [];  
+var cpXY = {x: 0, y: 0};
+var lines = 0;
+var speed = 60;
+var pieceNum;
+var FtillnextM = speed;
+var orientation = 0;
+var allPiece = [
+        
+        [
+            [
+                [1, 0],
+                [1, 1],
+                [1, 2],
+                [1, 3]
+                /*
+                E F E E
+                E F E E
+                E F E E
+                E F E E
+                */
+            ], // 1
+            [
+                [0, 1],
+                [1, 1],
+                [2, 1],
+                [3, 1]
+                
+                /*
+                E E E E
+                F F F F
+                E E E E
+                E E E E
+                */
+                
+            ], // 2
+            [
+                [2, 0],
+                [2, 1],
+                [2, 2],
+                [2, 3]
+                
+                /*
+                E E F E
+                E E F E
+                E E F E
+                E E F E
+                */
+                
+            ], // 3
+            [
+                [0, 2],
+                [1, 2],
+                [2, 2],
+                [3, 2],
+                /*
+                E E E E
+                E E E E
+                F F F F
+                E E E E
+                */
+            ], // 4
+        ], // Line
+        [
+            [
+                [0, 1],
+                [1, 1],
+                [2, 1],
+                [1, 0]
+                /*
+                E F E E
+                F F F E
+                E E E E
+                E E E E
+                */
+            ], // 1
+            [
+                [1, 0],
+                [1, 1],
+                [1, 2],
+                [2, 1]
+                
+                /*
+                E F E E
+                E F F E
+                E F E E
+                E E E E
+                */
+                
+            ], // 2
+            [
+                [0, 1],
+                [1, 1],
+                [2, 1],
+                [1, 2]
+                /*
+                E F E E
+                F F F E
+                E E E E
+                E E E E
+                */
+                
+            ], // 3
+            [
+                [1, 0],
+                [1, 1],
+                [1, 2],
+                [0, 1]
+                
+                /*
+                E F E E
+                E F F E
+                E F E E
+                E E E E
+                */
+            ], // 4
+        ], // T piece
+        [
+            [
+                [0, 0],
+                [1, 1],
+                [1, 2],
+                [1, 0]
+                /*
+                F F E E
+                E F E E
+                E F E E
+                E E E E
+                */
+            ], // 1
+            [
+                [0, 1],
+                [1, 1],
+                [2, 0],
+                [2, 1]
+                
+                /*
+                E E F E
+                F F F E
+                E E E E
+                E E E E
+                */
+                
+            ], // 2
+            [
+                [1, 0],
+                [1, 2],
+                [2, 2],
+                [1, 1]
+                /*
+                E F E E
+                E F E E
+                E F F E
+                E E E E
+                */
+                
+            ], // 3
+            [
+                [0, 1],
+                [1, 1],
+                [2, 1],
+                [0, 2]
+                
+                /*
+                E E E E
+                F F F E
+                F E E E
+                E E E E
+                */
+            ], // 4
+        ], // L piece
+        [
+            [
+                [0, 2],
+                [1, 1],
+                [1, 2],
+                [1, 0]
+                /*
+                F F E E
+                E F E E
+                E F E E
+                E E E E
+                */
+            ], // 1
+            [
+                [0, 1],
+                [1, 1],
+                [0, 0],
+                [2, 1]
+                
+                /*
+                E E F E
+                F F F E
+                E E E E
+                E E E E
+                */
+                
+            ], // 2
+            [
+                [1, 0],
+                [1, 2],
+                [2, 0],
+                [1, 1]
+                /*
+                E F E E
+                E F E E
+                E F F E
+                E E E E
+                */
+                
+            ], // 3
+            [
+                [0, 1],
+                [1, 1],
+                [2, 1],
+                [2, 2]
+                
+                /*
+                E E E E
+                F F F E
+                F E E E
+                E E E E
+                */
+            ], // 4
+        ], // J piece
+        [
+            [
+                [0, 0],
+                [1, 0],
+                [0, 1],
+                [1, 1]
+                /*
+                F F E E
+                F F E E
+                E E E E
+                E E E E
+                */
+            ], // 1
+            [
+                [0, 0],
+                [1, 0],
+                [0, 1],
+                [1, 1]
+                
+                /*
+                E E F E
+                F F F E
+                E E E E
+                E E E E
+                */
+                
+            ], // 2
+            [
+                [0, 0],
+                [1, 0],
+                [0, 1],
+                [1, 1]
+                /*
+                E F E E
+                E F E E
+                E F F E
+                E E E E
+                */
+                
+            ], // 3
+            [
+                [0, 0],
+                [1, 0],
+                [0, 1],
+                [1, 1]
+                
+                /*
+                E E E E
+                F F F E
+                F E E E
+                E E E E
+                */
+            ], // 4
+        ], // O piece
+        [
+            [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [2, 1]
+                /*
+                F F E E
+                E F F E
+                E E E E
+                E E E E
+                */
+            ], // 1
+            [
+                [1, 1],
+                [1, 2],
+                [2, 1],
+                [2, 0]
+                
+                /*
+                E E F E
+                E F F E
+                E F E E
+                E E E E
+                */
+                
+            ], // 2
+            [
+                [0, 1],
+                [1, 1],
+                [1, 2],
+                [2, 2]
+                /*
+                E F E E
+                E F E E
+                E F F E
+                E E E E
+                */
+                
+            ], // 3
+            [
+                [0, 1],
+                [0, 2],
+                [1, 1],
+                [1, 0]
+                
+                /*
+                E E E E
+                F F F E
+                F E E E
+                E E E E
+                */
+            ], // 4
+        ], // Z piece
+        [
+            [
+                [1, 0],
+                [2, 0],
+                [0, 1],
+                [1, 1]
+                /*
+                E F F E
+                F F E E
+                E E E E
+                E E E E
+                */
+            ], // 1
+            [
+                [2, 1],
+                [2, 2],
+                [1, 1],
+                [1, 0]
+                
+                /*
+                E E F E
+                E F F E
+                E F E E
+                E E E E
+                */
+                
+            ], // 2
+            [
+                [1, 1],
+                [2, 1],
+                [0, 2],
+                [1, 2]
+                /*
+                E F E E
+                E F E E
+                E F F E
+                E E E E
+                */
+                
+            ], // 3
+            [
+                [0, 0],
+                [0, 1],
+                [1, 2],
+                [1, 1]
+                
+                /*
+                E E E E
+                F F F E
+                F E E E
+                E E E E
+                */
+            ], // 4
+        ] // S piece
+    ];
+var bLength = 10;
+var bHeight = 20;
+var piecesInBag = [];
+for(var i = 0; i < allPiece.length; ++i){
+    piecesInBag.push(i);
+}
+  pieceNum = piecesInBag[Math.floor(random(0, piecesInBag.length))];
+  piecesInBag.splice(pieceNum - (allPiece.length - piecesInBag.length), 1);
+    
+for(var i = 0; i < bHeight; ++i){
+    board.push([]);
+    colorMap.push([]);
+    for(var j = 0; j < bLength; ++j){
+        board[i].push(false);
+        colorMap[i].push(null);
+    }
+} // Inits Empty Board From length and height vars
+
+keyPressed = function(){
+if(keyCode === UP) {
+    ++orientation;
+    if(orientation > 3){orientation = 0;}
+    if(orientation < 0){orientation = 3;}
+}
+if(keyCode === RIGHT) {
+    ++cpXY.x;
+    
+    for(var i = 0; i < curPiece.length; ++i){
+        if(curPiece[i][0] + cpXY.x >= bLength){
+            --cpXY.x;
+        }
+    }
+    
+    for(var j = 0; j < bHeight; ++j){
+            for(var n = 0; n < bLength; ++n){
+             for(var k = 0; k < curPiece.length; ++k){
+              if(board[j][n] && curPiece[k][1] + cpXY.y === j && curPiece[k][0] + cpXY.x === n){
+                  --cpXY.x;
+              }
+             }
+            }
+        } // Checks for Collision
+    
+}
+if(keyCode === LEFT) {
+    --cpXY.x;
+    
+    for(var i = 0; i < curPiece.length; ++i){
+        if(curPiece[i][0] + cpXY.x < 0){
+            ++cpXY.x;
+        }
+    }
+    
+    for(var j = 0; j < bHeight; ++j){
+            for(var n = 0; n < bLength; ++n){
+             for(var k = 0; k < curPiece.length; ++k){
+              if(board[j][n] && curPiece[k][1] + cpXY.y === j && curPiece[k][0] + cpXY.x === n){
+                  ++cpXY.x;
+              }
+             }
+            }
+        } // Checks for Collision
+}
+if(keyCode === DOWN) {
+    ++cpXY.y;
+    FtillnextM = speed;
+}
+if(key.toString() === " "){
+    FtillnextM = 10;
+    while(true){
+        var touching = false;
+        
+        for(var j = 0; j < bHeight; ++j){
+            for(var n = 0; n < bLength; ++n){
+             for(var k = 0; k < curPiece.length; ++k){
+              if(board[j][n] && curPiece[k][1] + cpXY.y === j && curPiece[k][0] + cpXY.x === n){
+                  touching = true;
+              }
+             }
+            }
+        }
+        
+        for(var i = 0; i < bHeight; ++i){
+            for(var j = 0; j < curPiece.length; ++j){
+                if(curPiece[j][1] + cpXY.y === bHeight - 1){
+                    touching = true;
+                }
+            }
+        }
+        
+        if(touching){
+            break;
+        }
+        ++cpXY.y;
+    }
+}
+};
+draw = function() {
+    curPiece = allPiece[pieceNum][orientation];
+    background(217, 217, 217);
+    fill(0, 0, 0);
+    rect(0, 0, 100, 600);
+    rect(100 + bLength * 20, 0, 400, 600);
+    rect(0, 0, 400, 40);
+    rect(0, 40 + bHeight * 20, 400, 600);
+    for(var i = 0; i < bLength; ++i){
+        if(i % 2 === 0){
+            fill(232, 232, 232);
+            noStroke();
+            rect(100 + i * 20, 40, 20, bHeight*20);
+        }
+    }
+    stroke(0, 0, 0);
+    --FtillnextM;
+    
+    if(orientation > 3){orientation = 0;}
+    if(orientation < 0){orientation = 3;}
+    
+    if(FtillnextM <= 0){
+        cpXY.y++;
+        FtillnextM = speed;
+    }
+    for(var i = 0; i < curPiece.length; ++i) {
+        if(curPiece[i][1] + cpXY.y === bHeight){
+            --cpXY.y;
+           for(var j = 0; j < curPiece.length; ++j){
+            board[curPiece[j][1] + cpXY.y][curPiece[j][0] + cpXY.x] = true;
+            var setTo;
+            if(pieceNum === 0){setTo = color(0, 191, 194);}
+                if(pieceNum === 1){setTo = color(157, 0, 255);}
+                if(pieceNum === 2){setTo = color(255, 166, 0);}
+                if(pieceNum === 3){setTo = color(0, 4, 255);}
+                if(pieceNum === 4){setTo = color(251, 255, 0);}
+                if(pieceNum === 5){setTo = color(255, 0, 0);}
+                if(pieceNum === 6){setTo = color(0, 255, 9);}
+            colorMap[curPiece[j][1] + cpXY.y][curPiece[j][0] + cpXY.x] = setTo;
+           } 
+           cpXY.x = Math.floor(bLength/2);
+            cpXY.y = 0;
+            pieceNum = piecesInBag[Math.floor(random(0, piecesInBag.length))];
+            piecesInBag.splice(pieceNum - (allPiece.length - piecesInBag.length), 1);
+           break;
+        } // Checks for Floor
+        for(var j = 0; j < bHeight; ++j){
+            for(var n = 0; n < bLength; ++n){
+             for(var k = 0; k < curPiece.length; ++k){
+              if(board[j][n] && curPiece[k][1] + cpXY.y === j && curPiece[k][0] + cpXY.x === n){
+                  --cpXY.y;
+                  for(var l = 0; l < curPiece.length; ++l){
+                  board[curPiece[l][1] + cpXY.y][curPiece[l][0] + cpXY.x] = true;
+                  var setTo;
+            if(pieceNum === 0){setTo = color(0, 191, 194);}
+                if(pieceNum === 1){setTo = color(157, 0, 255);}
+                if(pieceNum === 2){setTo = color(255, 166, 0);}
+                if(pieceNum === 3){setTo = color(0, 4, 255);}
+                if(pieceNum === 4){setTo = color(251, 255, 0);}
+                if(pieceNum === 5){setTo = color(255, 0, 0);}
+                if(pieceNum === 6){setTo = color(0, 255, 9);}
+            colorMap[curPiece[l][1] + cpXY.y][curPiece[l][0] + cpXY.x] = setTo;
+                  }
+                  cpXY.x = Math.floor(bLength/2);
+            cpXY.y = 0;
+            var tempRand = Math.floor(random(0, piecesInBag.length));
+            pieceNum = piecesInBag[tempRand];
+            piecesInBag.splice(tempRand, 1);
+                  break;
+              }
+             }
+            }
+        } // Checks for Pieces
+        
+    } // Checks for Touching Floor / Piece
+    for(var i = 0; i < board.length; ++i){
+        for(var j = 0; j < board[i].length; ++j){
+            for(var n = 0; n < curPiece.length; ++n){
+                if(pieceNum === 0){fill(0, 191, 194);}
+                if(pieceNum === 1){fill(157, 0, 255);}
+                if(pieceNum === 2){fill(255, 166, 0);}
+                if(pieceNum === 3){fill(0, 4, 255);}
+                if(pieceNum === 4){fill(251, 255, 0);}
+                if(pieceNum === 5){fill(255, 0, 0);}
+                if(pieceNum === 6){fill(0, 255, 9);}
+                rect(100 + (curPiece[n][0] * 20) + (cpXY.x * 20), 40 + (curPiece[n][1] * 20) + (cpXY.y * 20), 20, 20);
+            }
+        }
+    } // Displays Piece
+    fill(171, 171, 171);
+    text(cpXY.y, 10, 10);
+    text(FtillnextM, 10, 26);
+    text(orientation, 10, 39);
+    text(pieceNum, 10, 56);
+    text(piecesInBag.length, 10, 70);
+    text(lines, 10, 83);
+    
+    for(var i = 0; i < bHeight; ++i){
+        var checks = true;
+        for(var j = 0; j < bLength; ++j){
+            if(!board[i][j]){
+                checks = false;
+            }
+        }
+        if(checks){
+            for(var n = 0; n < bLength; ++n){
+                board[i][n] = false;
+            }
+            ++lines;
+            if(lines % 10 === 0){
+                speed *= 10/11;
+            }
+        }
+        if(checks){
+            for(var n = bHeight - (bHeight - i); n > 0; --n){
+                    board[n] = board[n - 1];
+                    colorMap[n] = colorMap[n - 1];
+            }
+        }
+    }
+    
+    
+    for(var i = 0; i < board.length; ++i){
+        for(var j = 0; j < board[i].length; ++j){
+            fill(colorMap[i][j]);
+            if(board[i][j] === true){rect(100 + (j * 20), 40 + (i * 20), 20, 20);}
+        }
+    } // Displays Blocks
+    if(piecesInBag.length === 0){
+        for(var i = 0; i < allPiece.length; ++i){
+            piecesInBag.push(i);
+        }
+    }
+};
+        </script>
+    </body>
+</html>

@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Portal</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script>
+        framerate(60)
+		function secsToFrames(secs, fps){
+            return secs * (fps || 60);
+        }
+        function msToFrames(ms, fps){
+            return (ms / 1000) * fps;
+        }
+
+        function inRange(numCheck, minimum, maximum){
+            return numCheck >= minimum && numCheck <= maximum;
+        }
+        function intersects(a,b,c,d,p,q,r,s) {
+        var det, gamma, lambda;
+        det = (c - a) * (s - q) - (r - p) * (d - b);
+        if (det === 0) {
+            return false;
+        } else {
+            lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
+            gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
+            return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+        }
+        }
+
+        function shapeWithCollision(x, y, lines){
+            this.x = x;
+            this.y = y;
+            this.lines = lines;
+            this.draw = function() {
+                for(var i = 0; i < lines.length; ++i){
+                if(i !== lines.length - 1){
+                    line(this.lines[i].x + this.x, this.lines[i].y + this.y, this.lines[i + 1].x + this.x, this.lines[i + 1].y + this.y);
+                } else {
+                    line(this.lines[i].x + this.x, this.lines[i].y + this.y, lines[0].x + this.x, lines[0].y + this.y);
+                }
+            }
+            };
+            
+            this.intersectsWith = function(otherShape){
+                for(var i = 0; i < this.lines.length; ++i){
+                    var curLine = {
+                        s: new PVector(this.lines[i].x + this.x, this.lines[i].y + this.y),
+                        e: null
+                    };
+                    if(i === this.lines.length - 1){
+                        curLine.e = new PVector(this.lines[0].x + this.x, this.lines[0].y + this.y);
+                    } else {
+                        curLine.e = new PVector(this.lines[i+1].x + this.x, this.lines[i+1].y + this.y);
+                    }
+                    
+                    for(var j = 0; j < otherShape.lines.length; ++j){
+                        var otherLine = {
+                            s: new PVector(otherShape.lines[j].x + otherShape.x, otherShape.lines[j].y + otherShape.y),
+                            e: null
+                        };
+                        
+                        if(j === otherShape.lines.length - 1){
+                            otherLine.e = new PVector(otherShape.lines[0].x + otherShape.x, otherShape.lines[0].y + otherShape.y);
+                        } else {
+                            otherLine.e = new PVector(otherShape.lines[j+1].x + otherShape.x, otherShape.lines[j+1].y + otherShape.y);
+                        }
+                        if(intersects(curLine.s.x, curLine.s.y, curLine.e.x, curLine.e.y, otherLine.s.x, otherLine.s.y, otherLine.e.x, otherLine.e.y)){return true;}
+                    }
+                }
+                return false;
+            };
+            
+        }
+        var sineValues = [];
+
+        for(var i = 0; i < 360; ++i){
+            sineValues.push(sin(i));
+        }
+        function sine(angle){
+            return sineValues[floor(((angle + (360 * abs(floor(angle/360))))%360))];
+        }
+        function cosine(angle){
+            return sineValues[floor(abs((angle - 90 + (360 * abs(floor(angle/360))))%360))];
+        }
+        function rotRect(x, y, h, w, theta){ // xyhw because I fucked up the order the first time and am lazy
+            var sin0 = sine(theta + 0);
+            var sin90 = sine(theta + 90);
+            var cos0 = sine(theta + 270);
+            var cos90 = sin0;
+            
+            var hW = w/2;
+            var hH = h/2;
+            
+            var p1 = new PVector(x + sin0 * hW, y + cos0 * hW);
+            var p3 = new PVector(x - sin0 * hW, y - cos0 * hW);
+            
+            var p5 = new PVector(p1.x - sin90 * hH, p1.y - cos90 * hH);
+            var p6 = new PVector(p1.x + sin90 * hH, p1.y + cos90 * hH);
+            var p7 = new PVector(p3.x - sin90 * hH, p3.y - cos90 * hH);
+            var p8 = new PVector(p3.x + sin90 * hH, p3.y + cos90 * hH);
+            
+            quad(p5.x, p5.y, p6.x, p6.y, p8.x, p8.y, p7.x, p7.y);
+        }
+        function touching(x1, y1, w1, h1, x2, y2, w2, h2){
+            if(!w1){w1 = 1;}
+            if(!w2){w2 = 1;}
+            if(!h1){h1 = 1;}
+            if(!h2){h2 = 1;}
+            return x1+w1 > x2 && x1 < x2 + w2 && y1+h1 > y2 && y1 < y2 + h2;
+        }
+
+        var GRAVITY = 0.12;
+
+        var player = {
+            x: 0,
+            y: 0,
+            moveIncrement: 0.2,
+            fs: 0,
+            hs: 0,
+            fsCap: 7,
+            hsCap: 3,
+            pGunLv: 0,
+            hitbox: new shapeWithCollision(0, 0, [new PVector(0, 0), new PVector(20, 0), new PVector(20, 20), new PVector(0, 20)]),
+            extraRotation: 0,
+            holdingObject: false,
+        };
+        var physObjects;
+        function physicsObject(x, y, clr){
+            var ogPos = new PVector(x, y);
+            this.x = x;
+            this.y = y;
+            this.fs = 0;
+            this.hs = 0;
+            this.hsCap = 3;
+            this.fsCap = 7;
+            this.hitbox = new shapeWithCollision(0, 0, [new PVector(0, 0), new PVector(20, 0), new PVector(20, 20), new PVector(0, 20)]);
+            this.clr = clr;
+            this.update = function(){
+                if(this.active){
+                if(!this.held){
+                if(this.fs === 0){
+                    this.moveIncrement = 0.6;
+                    this.hsCap = 2.2;
+                } else {
+                    this.moveIncrement = 0.1;
+                }
+                this.y += this.fs;
+                this.x += this.hs;
+                this.fs += GRAVITY;
+                this.fs = constrain(this.fs, -this.fsCap, this.fsCap);
+                } else {
+                    this.fs = 0;
+                    this.hs = 0;
+                    var m = new PVector(mouseX, mouseY);
+                    m.sub(player);
+                    var dfplr = dist(m.x, m.y, 0, 0);
+                    m.div(new PVector(dfplr, dfplr));
+                    this.x = player.x + m.x * 22;
+                    this.y = player.y + m.y * 22;
+                }
+                this.hitbox.x = this.x - 10;
+                this.hitbox.y = this.y - 10;
+                }
+            };
+            this.draw = function() {
+                if(this.active){
+                fill(clr);
+                rotRect(this.x, this.y, 20, 20, 0);
+                }
+            };
+            this.reset = function(){
+                this.x = ogPos.x;
+                this.y = ogPos.y;
+                this.fs = 0;
+                this.hs = 0;
+            }
+        }
+        physObjects = [
+            new physicsObject(240, 328, color(105, 170, 255)),
+            new physicsObject(160, 129, color(105, 170, 255)),
+            new physicsObject(60, 141, color(105, 170, 255)),
+            new physicsObject(195, 141, color(105, 170, 255)),
+            ];
+        var spawnPositions = [
+            new PVector(158, 165),
+            new PVector(60, 328),
+            new PVector(60, 328),
+            new PVector(60, 331),
+            new PVector(60, 223),
+            new PVector(127, 223),
+        ];
+        var level = -1;
+
+        var frames = 0;
+        var portals = [];
+        var orbit;
+        function portal(x, y, clr, angle, sendTo){
+            this.sendTo = sendTo;
+            this.angle = angle;
+            this.clr = clr;
+            this.x = x;
+            this.y = y;
+            this.active = true;
+            
+            var sin0 =  sin(-angle + 90);
+            var sin90 = sin(-angle + 180);
+            var cos0 =  cos(-angle + 90);
+            var cos90 = cos(-angle + 180);
+            
+            var hW = 2.5;
+            var hH = 20;
+            
+            var p1 = new PVector(x + sin0 * hW, y + cos0 * hW);
+            var p3 = new PVector(x - sin0 * hW, y - cos0 * hW);
+            
+            var p5 = new PVector(p1.x - sin90 * hH, p1.y - cos90 * hH);
+            var p6 = new PVector(p1.x + sin90 * hH, p1.y + cos90 * hH);
+            var p7 = new PVector(p3.x - sin90 * hH, p3.y - cos90 * hH);
+            var p8 = new PVector(p3.x + sin90 * hH, p3.y + cos90 * hH);
+            
+            this.hitbox = new shapeWithCollision(0, 0, [p5, p6, p8, p7]);
+            this.move = function(x, y, angle){
+                this.x = x;
+                this.y = y;
+                this.angle = angle;
+                var sin0 =  sin(-angle + 90);
+                var sin90 = sin(-angle + 180);
+                var cos0 =  cos(-angle + 90);
+                var cos90 = cos(-angle + 180);
+                
+                var hW = 2.5;
+                var hH = 20;
+                
+                var p1 = new PVector(x + sin0 * hW, y + cos0 * hW);
+                var p3 = new PVector(x - sin0 * hW, y - cos0 * hW);
+                
+                var p5 = new PVector(p1.x - sin90 * hH, p1.y - cos90 * hH);
+                var p6 = new PVector(p1.x + sin90 * hH, p1.y + cos90 * hH);
+                var p7 = new PVector(p3.x - sin90 * hH, p3.y - cos90 * hH);
+                var p8 = new PVector(p3.x + sin90 * hH, p3.y + cos90 * hH);
+                
+                this.hitbox = new shapeWithCollision(0, 0, [p5, p6, p8, p7]);
+            };
+            this.getThroughPortalPlayer = function(){
+                var dPos = new PVector(portals[this.sendTo].x + (this.x - player.x), portals[this.sendTo].y + (-player.y + this.y));
+                
+                var rotatedPos = orbit(dPos.x, dPos.y, portals[this.sendTo].x, portals[this.sendTo].y, portals[this.sendTo].angle - this.angle);
+                
+                return {
+                    x: rotatedPos.x,
+                    y: rotatedPos.y,
+                    angle: portals[this.sendTo].angle - this.angle
+                };
+            };
+        }
+        var portals = [
+            new portal(68, 166, color(0, 132, 255), 180, 1),
+            new portal(199, 166, color(255, 174, 0), 180, 0),
+        ];
+        function killPlayer(){
+            if(spawnPositions[level]){
+                player.x = spawnPositions[level].x;
+                player.y = spawnPositions[level].y;
+            } else {
+                player.x = 0;
+                player.y = 0;
+            }
+            player.fs = 0;
+            player.hs = 0;
+            for(var i = 0; i < physObjects.length; ++i){
+                physObjects[i].reset();
+            }
+            for(var i = 0; i < portals.length; ++i){
+                portals[i].active = false;
+            }
+            frames = 0;
+        }
+        killPlayer();
+
+        var touchingPortal = false;
+        function portalShot(origin, goTo, portalShot){
+            var m = goTo;
+            m.sub(origin);
+            var dfplr = dist(m.x, m.y, 0, 0);
+            dfplr /= 3;
+            m.div(new PVector(dfplr, dfplr));
+            var position = new PVector(origin.x, origin.y);
+            
+            this.mDist = m;
+            this.pos = position;
+            this.portal = portalShot;
+            
+            this.update = function(){
+                position.add(m);
+                this.pos = position;
+            };
+            this.draw = function() {
+                fill(portalShot.clr);
+                rect(position.x, position.y, 5, 5);
+            };
+        }
+        var portalShots = [];
+
+
+        function ground(x, y, w, h, portalable, portalGround){
+            if(!portalGround){
+            portalGround = false;
+            if(portalable){
+                fill(237, 237, 237);
+            } else {
+                fill(110, 110, 110);
+            }
+            rect(x, y, w, h);
+            }
+            var pxSh = player.x - 10;
+            var pySh = player.y - 10;
+        if(touchingPortal === portalGround){
+            if(touching(x, y, w, 2, pxSh, pySh + 15, 20, 5) && player.fs > 0){
+                player.fs = 0;
+                player.y = y - 10;
+                player.hs *= 0.85;
+            }
+            if(touching(x, y + h - 2, w, 2, pxSh, pySh, 20, 5) && player.fs < 0){
+                player.fs = 1;
+                player.y = y + h + 10;
+            }
+            if(touching(x, y + 2, 4, h, pxSh + 17, pySh, 3, 20) && player.hs > 0){
+                player.hs = 0;
+                player.x = x - 10;
+            }
+            if(touching(x + w - 4, y + 2, 4, h, pxSh, pySh, 3, 20) && player.hs < 0){
+                player.hs = 0;
+                player.x = x + w + 10;
+            }
+        }
+        for(var i = 0; i < physObjects.length; ++i){
+            var p = physObjects[i];
+            var pxSh = p.x - 10;
+            var pySh = p.y - 10;
+            if(p.touchingPortal === portalGround){
+            if(touching(x, y, w, 2, pxSh, pySh + 15, 20, 5) && p.fs > 0){
+                p.fs = 0;
+                p.y = y - 10;
+                p.hs *= 0.85;
+            }
+            if(touching(x, y + h - 2, w, 2, pxSh, pySh, 20, 5) && p.fs < 0){
+                p.fs = 1;
+                p.y = y + h + 10;
+            }
+            if(touching(x, y + 2, 4, h, pxSh + 17, pySh, 3, 20) && p.hs > 0){
+                p.hs = 0;
+                p.x = x - 10;
+            }
+            if(touching(x + w - 4, y + 2, 4, h, pxSh, pySh, 3, 20) && p.hs < 0){
+                p.hs = 0;
+                p.x = x + w + 10;
+            }
+        }
+        }
+        for(var i = 0; i < portalShots.length; ++i){
+            var psp = portalShots[i].pos;
+            if(portalable){
+            if(touching(x, y, w, 2, psp.x, psp.y, 5, 5)){
+                if(w > 30){
+                psp.sub(portalShots[i].mDist);
+                psp.x = constrain(psp.x, x + 20, x + w - 20);
+                portalShots[i].portal.move(psp.x, y - 2.5, 90);
+                portalShots[i].portal.active = true;
+                --i;
+                portalShots.splice(i+1, 1);
+                } else {
+                    --i;
+                    portalShots.splice(i+1, 1);
+                }
+            }
+            if(touching(x, y + h - 2, w, 2, psp.x, psp.y, 5, 5)){
+                if(w > 30){
+                psp.sub(portalShots[i].mDist);
+                psp.x = constrain(psp.x, x + 20, x + w - 20);
+                portalShots[i].portal.move(psp.x, y + h + 2.5, 270);
+                portalShots[i].portal.active = true;
+                --i;
+                portalShots.splice(i+1, 1);
+                } else {
+                    --i;
+                    portalShots.splice(i+1, 1);
+                }
+            }
+            if(touching(x, y + 2, 4, h, psp.x, psp.y, 5, 5)){
+                if(h > 30){
+                psp.sub(portalShots[i].mDist);
+                psp.y = constrain(psp.y, y + 20, y + h - 20);
+                portalShots[i].portal.move(x - 2.5, psp.y, 0);
+                portalShots[i].portal.active = true;
+                --i;
+                portalShots.splice(i+1, 1);
+                } else {
+                    --i;
+                    portalShots.splice(i+1, 1);
+                }
+            }
+            if(touching(x + w - 4, y + 2, 4, h, psp.x, psp.y, 5, 5)){
+                if(h > 30){
+                psp.sub(portalShots[i].mDist);
+                psp.y = constrain(psp.y, y + 20, y + h - 20);
+                portalShots[i].portal.move(x + w + 2.5, psp.y, 180);
+                portalShots[i].portal.active = true;
+                --i;
+                portalShots.splice(i+1, 1);
+                } else {
+                    --i;
+                    portalShots.splice(i+1, 1);
+                }
+            }
+            } else {
+                if(touching(x, y, w, h, psp.x, psp.y, 5, 5) && !portalGround){
+                    --i;
+                    portalShots.splice(i+1, 1);
+                }
+            }
+        }
+        }
+        function elevator(x, y){
+            fill(158, 158, 158);
+            rect(x, y, 40, 50);
+            rect(x + 15, 0, 10, y);
+            fill(0, 255, 47);
+            rect(x + 5, y + 5, 30, 40);
+            if(touching(x, y, 40, 50, player.x - 10, player.y - 10, 20, 20)){
+                for(var i = 0; i < portals.length; ++i){
+                    portals[i].active = false;
+                }
+                ++level;
+                killPlayer();
+                player.holdingObject = false;
+                for(var i = 0; i < physObjects.length; ++i){
+                    var p = physObjects[i];
+                    p.held = false;
+                    p.active = false;
+                }
+            }
+        }
+        function button(x, y){
+            var active = false;
+            if(touching(player.x - 10, player.y - 10, 20, 20, x, y, 30, 10)){
+                active = true;
+            }
+            for(var i = 0; i < physObjects.length; ++i){
+                if(physObjects[i].active && touching(physObjects[i].x - 10, physObjects[i].y - 10, 20, 20, x, y, 30, 10)){
+                    active = true;
+                }
+            }
+            fill(255, 0, 0);
+            if(!active){
+                rect(x, y, 30, 10);
+                return false;
+            } else {
+                rect(x, y + 5, 30, 5);
+                return true;
+            }
+        }
+        function door(x, y, open){
+            if(open === undefined){open = touching(player.x - 10, player.y - 10, 20, 20, x - 20, y, 50, 40);}
+            if(!open){
+                ground(x, y, 10, 40);
+                fill(0, 201, 17);
+                rect(x, y, 10, 40);
+            }
+        }
+
+        function mButton(x, y, w, h, textWanted, onClick){
+            rect(x, y, w, h);
+            fontSize(50);
+            var bClr = ctx.fillStyle;
+            fill("#000000");
+            fillText(textWanted, x, y + h - 15)
+            if(touching(x, y, w, h, mouseX, mouseY, 1, 1)){
+                fill(blend(bClr, color(0, 0, 0)));
+                rect(x, y, w, h);
+                fill("#000000")
+                fillText(textWanted, x, y + h - 15)
+                if(mouseDown){
+                    onClick();
+                }
+            }
+        }
+
+        function orbit(x1, y1, x2, y2, theta){
+            var a = new PVector(x1, y1);
+            a.sub(new PVector(x2, y2));
+            var sinTheta = sin(theta);
+            var cosTheta = cos(theta);
+            var x = a.x;
+            var y = a.y;
+            a.x = x * cosTheta - y * sinTheta;
+            a.y = y * cosTheta + x * sinTheta;
+            a.add(new PVector(x2, y2));
+            return a;
+        }
+
+        function updatePlayer(){
+            if(player.fs === 0){
+                player.moveIncrement = 0.6;
+                player.hsCap = 2.2;
+                if(keys[UP]){player.fs = -3;}
+            } else {
+                player.moveIncrement = 0.1;
+            }
+            player.y += player.fs;
+            player.x += player.hs;
+            player.fs += GRAVITY;
+            player.fs = constrain(player.fs, -player.fsCap, player.fsCap);
+            if(player.y > height){
+                killPlayer();
+            }
+            
+            if(keys[RIGHT] && player.hs < player.hsCap){
+                player.hs = min(player.hs + player.moveIncrement, player.hsCap);
+            }
+            if(keys[LEFT] && player.hs > -player.hsCap){
+                player.hs = max(player.hs - player.moveIncrement, -player.hsCap);
+            }
+            player.hitbox.x = player.x - 10;
+            player.hitbox.y = player.y - 10;
+        }
+        var logo = new Image();
+        var logoLoaded;
+        logo.onload = () => {
+            logoLoaded = true;
+        };
+        logo.src = "Portal Platformer 2 Assets/logo.png";
+        function drawChamber(){
+            switch (level) {
+                case -2: {
+                    background(196, 196, 196)
+                    fill("#000000")
+                    fillText("If you're here, you probably want to know why this is", 100, 100);
+                    fillText("\"Portal Platformer Z\" and not 2 or something. I'm here to", 100, 200);
+                    fillText("say it's because this is not a sequel, but a 'Super Version'", 100, 300);
+                    fillText("that sucks less. When you play the game itself, you'll", 100, 400);
+                    fillText("understand why it is better. In any case, enjoy the game!", 100, 500);
+                    fill("#FFFFFF")
+                    mButton(500, 520, 430, 75, "Back to Main Menu", ()=>{level = -1;});
+                    break;
+                }
+                // -2 is the "Why is it Z?"
+                case -1: {
+                    background(196, 196, 196);
+                    fill("#FFFFFF");
+                    mButton(500, 600, 150, 75, "Play", ()=>{level = 0; killPlayer();});
+                    fill("#FFFFFF")
+                    mButton(800, 600, 150, 75, "Why?", ()=>{level = -2;});
+                    if(logoLoaded){
+                        ctx.drawImage(logo, width/2 - 400, height/2 - 300, 800, 450);
+                    }
+                    break;
+                }
+                // -1 is the Main Menu
+                case 0: {
+                    portals[0].active = true;
+                    portals[1].active = true;
+                    portals[0].move(221, 155, 0);
+                    portals[1].move(147, 46, 180);
+                    ground(144, 175, 80, 100, true);
+                    ground(224, 81, 20, 194, true);
+                    ground(124, 20, 20, 255, true);
+                    ground(144, 66, 100, 16, true);
+                    ground(60, 0, 274, 20, true);
+                    ground(314, 20, 20, 348, true);
+                    ground(60, 352, 254, 16, true);
+                    ground(124, 275, 12, 37, true);
+                    ground(60, 20, 64, 267, true);
+                    ground(60, 287, 12, 65, true);
+                    elevator(79, 298);
+                    door(124, 312);
+                    break;
+                }
+                case 1: {
+                    portals[0].active = true;
+                    portals[1].active = true;
+                    portals[0].move(150, 318, 0);
+                    if(inRange(frames % secsToFrames(9), 0, secsToFrames(3))){portals[1].move(100, 53, 180);}
+                    if(inRange(frames % secsToFrames(9), secsToFrames(3), secsToFrames(6))){portals[1].move(100, 155, 180);}
+                    if(inRange(frames % secsToFrames(9), secsToFrames(6), secsToFrames(9))){portals[1].move(192, 318, 180);}
+                    physObjects[0].active = true;
+                    ground(0, 175, 400, 29, true);
+                    ground(213, 112, 10, 23, true);
+                    
+                    ground(-1, 73, 401, 39, true);
+                    
+                    ground(0, 338, 305, 20, true);
+                    ground(0, 268, 294, 10, true);
+                    ground(153, 268, 36, 90, true);
+                    ground(291, 268, 15, 90, true);
+                    ground(399, 0, 15, 204, true);
+                    ground(0, 0, 98, 179, true);
+                    door(213, 135, button(127, 63));
+                    elevator(230, 122);
+                    break; 
+                }
+                case 2: {
+                    portals[0].active = true;
+                    portals[1].active = true;
+                    portals[1].move(328, 169, 0);
+                    if(player.pGunLv === 0){
+                    fill(227, 227, 227);
+                    rect(130, 261, 8, 6);
+                    rect(138, 262, 4, 4);
+                    fill(43, 43, 43);
+                    rect(133, 268, 2, 4);
+                    rect(131, 272, 2, 4);
+                    rect(136, 272, 2, 4);
+                    if(touching(130, 261, 12, 6, player.x - 10, player.y - 10, 20, 20)){
+                        player.pGunLv = 1;
+                    }
+                    if(inRange(frames % secsToFrames(9), 0, secsToFrames(3))){
+                        portals[0].move(33, 317, 180);
+                    }
+                    if(inRange(frames % secsToFrames(9), secsToFrames(3), secsToFrames(6))){
+                        portals[0].move(267, 257, 0);
+                    }
+                    if(inRange(frames % secsToFrames(9), secsToFrames(6), secsToFrames(9))){
+                        portals[0].move(33, 257, 180);
+                    }
+                    }
+                    ground(330, 100, 30, 285, false);
+                    ground(0, 337, 330, 48, true);
+                    ground(0, 189, 30, 148, true);
+                    ground(270, 189, 60, 148, true);
+                    ground(30, 277, 240, 10, true);
+                    ground(0, 78, 7, 35, true);
+                    elevator(0, 137);
+                    break;
+                }
+                case 3: {
+                    portals[1].active = true;
+                    portals[1].move(357, 321, 0);
+                    ground(5, 341, 95, 20, false);
+                    ground(5, 281, 95, 10, true);
+                    ground(278, 341, 112, 21, false);
+                    ground(5, 291, 13, 50, true);
+                    ground(5, 231, 13, 50, true);
+                    ground(360, 291, 30, 50, true);
+                    elevator(50, 228);
+                }
+                    
+                break;
+                case 4: {
+                    portals[1].active = true;
+                    portals[1].move(21, 213, 180);
+                    physObjects[1].active = true;
+                    ground(10, 233, 119, 10, true);
+                    ground(121, 233, 10, 123, true);
+                    ground(191, 233, 10, 123, true);
+                    ground(201, 233, 183, 10, false);
+                    ground(121, 356, 80, 10, true);
+                    ground(10, 56, 10, 177, true);
+                    ground(304, 56, 10, 137, true);
+                    ground(20, 56, 284, 10, true);
+                    ground(384, 150, 10, 93, false);
+                    ground(314, 150, 70, 10, false);
+                    door(304, 193, button(58, 223));
+                    elevator(332, 180);
+                    break;
+                }
+                case 5: {
+                    portals[1].active = true;
+                    physObjects[2].active = true;
+                    physObjects[3].active = true;
+                    ground(107, 233, 285, 133, true);
+                    ground(181, 151, 212, 10, true);
+                    ground(30, 151, 45, 10, true);
+                    ground(219, 59, 10, 134, true);
+                    ground(5, 59, 25, 307, true);
+                    ground(30, 340, 77, 26, true);
+                    ground(30, 59, 370, 10, true);
+                    ground(390, 69, 10, 297, true);
+                    door(219, 193, button(119, 223));
+                    door(219, 193, button(169, 223));
+                    var finished = touching(248, 69, 157, 164, player.x - 10, player.y - 10, 20, 20);
+                    if(!finished){
+                        portals[1].move(31, 131, 180);
+                    } else {
+                        portals[1].move(230, 131, 180);
+                    }
+                    elevator(345, 98);
+                    break;
+                }
+                case 6: {
+                    portals[1].active = true;
+                    physObjects[2].active = true;
+                    physObjects[3].active = true;
+                    ground(107, 233, 285, 133, true);
+                    ground(181, 151, 212, 10, true);
+                    ground(30, 151, 45, 10, true);
+                    ground(219, 59, 10, 134, true);
+                    ground(5, 59, 25, 307, true);
+                    ground(30, 340, 77, 26, true);
+                    ground(30, 59, 370, 10, true);
+                    ground(390, 69, 10, 297, true);
+                    door(219, 193, button(119, 223));
+                    door(219, 193, button(169, 223));
+                    break;
+                }
+            }
+        }
+
+        draw = function() {
+            for(var i = 0; i < portalShots.length; ++i){
+                portalShots[i].update();
+                if(!touching(0, 0, width, height, portalShots[i].pos.x, portalShots[i].pos.y, 5, 5)){portalShots.splice(i, 1);}
+            }
+            ++frames;
+            noStroke();
+            updatePlayer();
+            background(196, 196, 196);
+            fill(255, 230, 163);
+            rotRect(player.x, player.y, 20, 20, 0);
+            touchingPortal = false;
+            for(var i = 0; i < physObjects.length; ++i){
+                var p = physObjects[i];
+                if(p.active){
+                p.update();
+                if(!p.held){
+                    ground(p.x - 10, p.y - 10, 20, 20);
+                }
+                p.draw();
+                }
+            }
+            for(var i = 0; i < portals.length; ++i){
+                var throughPlayer = portals[i].getThroughPortalPlayer();
+                if(player.hitbox.intersectsWith(portals[i].hitbox) && portals[i].active && portals[portals[i].sendTo].active){
+                fill(255, 230, 163);
+                rotRect(throughPlayer.x, throughPlayer.y, 20, 20, throughPlayer.angle);
+                }
+                for(var j = 0; j < physObjects.length; ++j){
+                    
+                    fill(physObjects[j].clr);
+                    var p = physObjects[j];
+                    if(p.hitbox.intersectsWith(portals[i].hitbox) && portals[i].active && portals[portals[i].sendTo].active && p.active){
+                    var dPos = new PVector(portals[portals[i].sendTo].x + (portals[i].x - p.x), portals[portals[i].sendTo].y + (-p.y + portals[i].y));
+                
+                    var rotatedPos = orbit(dPos.x, dPos.y, portals[portals[i].sendTo].x, portals[portals[i].sendTo].y, portals[portals[i].sendTo].angle - portals[i].angle);
+                    rotRect(rotatedPos.x, rotatedPos.y, 20, 20, portals[portals[i].sendTo].angle - portals[i].angle);
+                    }
+                }
+            }
+            for(var i = 0; i < physObjects.length; ++i){
+                physObjects[i].touchingPortal = false;
+            }
+            for(var i = 0; i < portals.length; ++i){
+                // [
+                var throughPlayer = portals[i].getThroughPortalPlayer();
+                if(player.hitbox.intersectsWith(portals[i].hitbox)){
+                if(portals[i].active && portals[portals[i].sendTo].active){
+                touchingPortal = true;
+                }
+                }
+                noStroke();
+                if(portals[i].active){
+                fill(portals[i].clr);
+                rotRect(portals[i].x, portals[i].y, 5, 40, portals[i].angle);
+                }
+                // [
+                stroke(0, 0, 0);
+                strokeWeight(1);
+                var closeP = new PVector(portals[i].x + cos(portals[i].angle) * 20, portals[i].y + sin(portals[i].angle) * 20);
+                var a = new PVector(closeP.x + cos(portals[i].angle + 90) * 20, closeP.y + sin(portals[i].angle + 90) * 20);
+                var b = new PVector(closeP.x + cos(portals[i].angle - 90) * 20, closeP.y + sin(portals[i].angle - 90) * 20);
+                
+                var endCollision = new shapeWithCollision(0, 0, [a, b]);
+                var c = new PVector(portals[i].x + cos(portals[i].angle + 90) * 20, portals[i].y + sin(portals[i].angle + 90) * 20);
+                var d = new PVector(portals[i].x + cos(portals[i].angle - 90) * 20, portals[i].y + sin(portals[i].angle - 90) * 20);
+                // ] Gets some lines
+                ground(c.x - 3, c.y, 6, 5, false, true);
+                ground(d.x - 3, d.y, 6, 5, false, true);
+                
+                if(player.hitbox.intersectsWith(endCollision) && portals[i].active && portals[portals[i].sendTo].active){
+                
+                var velVector = new PVector(player.hs - player.moveIncrement, player.fs - 0.1);
+                var rotVector = orbit(velVector.x, velVector.y, 0, 0, portals[portals[i].sendTo].angle - portals[i].angle + 180);
+                player.x = throughPlayer.x;
+                player.y = throughPlayer.y;
+                player.hs = rotVector.x;
+                player.fs = rotVector.y;
+                }
+                noStroke();
+                // ] Player Interactions
+                // [
+                objLoop: for(var j = 0; j < physObjects.length; ++j){
+                if(!physObjects[j].active){continue objLoop;}
+                let player = physObjects[j];
+                var throughPlayer = portals[i].getThroughPortalPlayer();
+                if(player.hitbox.intersectsWith(portals[i].hitbox)){
+                if(portals[i].active && portals[portals[i].sendTo].active){
+                player.touchingPortal = true;
+                }
+                }
+                // [
+                var closeP = new PVector(portals[i].x + cos(portals[i].angle) * 20, portals[i].y + sin(portals[i].angle) * 20);
+                var a = new PVector(closeP.x + cos(portals[i].angle + 90) * 20, closeP.y + sin(portals[i].angle + 90) * 20);
+                var b = new PVector(closeP.x + cos(portals[i].angle - 90) * 20, closeP.y + sin(portals[i].angle - 90) * 20);
+                
+                var endCollision = new shapeWithCollision(0, 0, [a, b]);
+                var c = new PVector(portals[i].x + cos(portals[i].angle + 90) * 20, portals[i].y + sin(portals[i].angle + 90) * 20);
+                var d = new PVector(portals[i].x + cos(portals[i].angle - 90) * 20, portals[i].y + sin(portals[i].angle - 90) * 20);
+                // ] Gets some lines
+                
+                if(player.hitbox.intersectsWith(endCollision) && portals[i].active && portals[portals[i].sendTo].active){
+                
+                var velVector = new PVector(player.hs - player.moveIncrement, player.fs - 0.1);
+                var rotVector = orbit(velVector.x, velVector.y, 0, 0, portals[portals[i].sendTo].angle - portals[i].angle + 180);
+                player.x = throughPlayer.x;
+                player.y = throughPlayer.y;
+                player.hs = rotVector.x;
+                player.fs = rotVector.y;
+                }
+                }
+                // ] Object Interactions
+            }
+            
+            drawChamber();
+            for(var i = 0; i < portalShots.length; ++i){
+                portalShots[i].draw();
+            }
+        };
+
+        function keyPressed(){
+
+            if(key.toString() === "e"){
+                if(!player.holdingObject){
+                    for(var i = 0; i < physObjects.length; ++i){
+                        var p = physObjects[i];
+                        if(touching(p.x - 10, p.y - 10, 20, 20, mouseX, mouseY) && dist(player.x, player.y, p.x, p.y) <= 50){
+                            player.holdingObject = true;
+                            p.held = true;
+                        }
+                    }
+                } else {
+                    player.holdingObject = false;
+                    for(var i = 0; i < physObjects.length; ++i){
+                        var p = physObjects[i];
+                        p.held = false;
+                    }
+                }
+            }
+            if(key.toString() === "r"){
+                killPlayer();
+            }
+            
+        }
+        function mouseClicked(e){
+            var mouseButton = e.buttons;
+            if(!player.holdingObject){
+                if(mouseButton === 1 && player.pGunLv >= 1){
+                    portalShots.push(new portalShot(player, new PVector(mouseX, mouseY), portals[0]));
+                    
+                }
+                if(mouseButton === 2 && player.pGunLv >= 2){
+                    portalShots.push(new portalShot(player, new PVector(mouseX, mouseY), portals[1]));
+                }
+            }
+        }
+
+
+		</script>
+    </body>
+</html>

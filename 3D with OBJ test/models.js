@@ -1,0 +1,1 @@
+var testCubeModel = "v -3 -3 -3\nv -3 -3 3\nv -3 3 -3\nv -3 3 3\nv 3 -3 -3\nv 3 -3 3\nv 3 3 -3\nv 3 3 3";

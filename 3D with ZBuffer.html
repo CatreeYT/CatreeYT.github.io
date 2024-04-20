@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>HEEEEELP</title>
+    </head>
+    <body>
+        <canvas id="Canvas"></canvas>
+        <script src="canvasFuncs.js"></script>
+        <script>
+            var n = 0;
+            draw = function(){
+                n++;
+                background(255, 255, 255)
+                for(var i = 0; i < width; ++i){
+                    for(var j = 0; j < height; ++j){
+                        setPixel(i, j, {r: (n+i+j) % 255, g: abs(n-i-j) % 255, b: 0})
+                    }
+                }
+                commitPixels();
+            }
+        </script>
+    </body>
+</html>

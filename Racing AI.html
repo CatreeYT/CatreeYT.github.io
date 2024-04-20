@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Racing AI</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script>
+var player = {
+x: 200,
+y: 200,
+angleOf: 0,
+accel: 0,
+sp_cap: 2
+};
+
+var players = [];
+
+var bestIn = [];
+
+var maxInputs = 10;
+
+var totalPlayers = 100;
+for(var i = 0; i < totalPlayers; ++i){
+    players.push({
+x: 200,
+y: 200,
+angleOf: 0,
+accel: 0,
+sp_cap: 2,
+inputs: [],
+});
+for(var j = 0; j < maxInputs; ++j){
+    players[i].inputs.push(floor(random(0, 3)));
+}
+bestIn = players[i].inputs.slice();
+}
+
+var bestAward = 0;
+
+var generation = 1;
+
+var currentInput = 0;
+var framesUntilNextInput = 20;
+
+var speed_inc = false;
+
+var pressed = {
+r: false,
+l: false,
+u: false,
+d: false,
+};
+
+// Convenience functions
+var touching = function(x, y, w, h, test_x, test_y){
+if(test_x > x && test_x < x + w && test_y > y && test_y < y + h){
+    return true;
+} else {
+return false;
+}
+};
+
+var swap_bool = function(bool){
+if(bool === true){return false;}
+return true;
+};
+
+
+var wall = function(x, y, w, h){
+    fill("#CCCCCC");
+    rect(x, y, w, h);
+    for(var i = 0; i < players.length; ++i){
+    if(players[i].x + 22 > x && players[i].x + 22 < x + players[i].sp_cap && players[i].y + 20 > y && players[i].y < y + h){players[i].x = x - 22;} // LEFT
+    if(players[i].x < x + w + 2 && players[i].x > x + w - players[i].sp_cap && players[i].y + 20 > y && players[i].y < y + h){players[i].x = x + w + 2;} // RIGHT
+    if(players[i].x + 20 > x - 2 && players[i].x < x + w + 2 && players[i].y + 20 > y - 2 && players[i].y < y + players[i].sp_cap){players[i].y = y - 22;} // TOP
+    if(players[i].x + 20 > x - 2 && players[i].x < x + w + 2 && players[i].y > y + h - players[i].sp_cap && players[i].y < y + h + 2){players[i].y = y + h + 2;} // BOTTOM
+    }
+};
+
+var showGivers = 0;
+
+function awardGiver(x, y, w, h, val){
+    for(var i = 0; i < players.length; ++i){
+    if(touching(x, y, w, h, players[i].x, players[i].y, 22, 22)){
+        players[i].currentAward = val;
+    }
+    }
+}
+
+var runningSim = 1;
+
+
+draw = function() {
+    if(runningSim){
+    --framesUntilNextInput;
+    if(framesUntilNextInput === 0){
+        framesUntilNextInput = 20;
+        ++currentInput;
+        if(currentInput === maxInputs){
+            ++generation;
+            if(generation % 10 === 0){maxInputs += 5;}
+            currentInput = 0;
+            for(var j = 0; j < players.length; ++j){
+            if(players[j].currentAward >= bestAward){
+                bestIn = players[j].inputs.slice();
+                bestAward = players[j].currentAward;
+                for(var i = 0; i < 3; ++i){
+                    players[j].inputs[floor(random(0, maxInputs))] = floor(random(0, 3));
+                }
+            } else{
+                players[j].inputs = bestIn.slice();
+                for(var i = 0; i < 3; ++i){
+                    players[j].inputs[floor(random(0, maxInputs))] = floor(random(0, 3));
+                }
+            }
+            players[j] = {
+            x: 200,
+            y: 200,
+            angleOf: 0,
+            accel: 0,
+            sp_cap: 2,
+            inputs: players[j].inputs,
+            currentAward: 0
+            };
+        }
+        }
+        if(speed_inc){
+        players = [players[0]];
+        players[0].inputs = bestIn.slice();
+        }
+    }
+    
+    background("#444444");
+    for(var i = 0; i < players.length; ++i){
+        
+    if(players[i].angleOf <= 0){players[i].angleOf = 359;}
+    if(players[i].angleOf > 360){players[i].angleOf = 1;}
+    if(players[i].inputs[currentInput] === 1){
+        players[i].angleOf-=4;
+    }
+    if(players[i].inputs[currentInput] === 2){
+        
+        players[i].angleOf+=4;
+    }
+    
+        
+        if(players[i].accel < players[i].sp_cap){
+        players[i].accel += 0.02;
+        }
+    }
+	
+    fill("#FF0000");
+    for(var i = 0; i < players.length; ++i){
+        
+    players[i].x += sin(players[i].angleOf) * players[i].accel;
+    
+    players[i].y += cos(players[i].angleOf) * players[i].accel;
+    
+    
+    quad(players[i].x + 10 + sin(players[i].angleOf + 45) * 10,
+    players[i].y + 10 + cos(players[i].angleOf + 45) * 10,
+    players[i].x + 10 + sin(players[i].angleOf + 90 + 45) * 10,
+    players[i].y + 10 + cos(players[i].angleOf + 90 + 45) * 10,
+    players[i].x + 10 + sin(players[i].angleOf + 180 + 45) * 10,
+    players[i].y + 10 + cos(players[i].angleOf + 180 + 45) * 10,
+    players[i].x + 10 + sin(players[i].angleOf + 270 + 45) * 10,
+    players[i].y + 10 + cos(players[i].angleOf + 270 + 45) * 10 );
+    }
+    fill("#dbdbdb");
+    
+    wall(-28, 39, 85, 371);
+    wall(130, 109, 17, 187);
+    wall(-3, -41, 478, 80);
+    wall(130, 109, 169, 17);
+    wall(363, 39, 120, 375);
+    wall(236, 180, 144, 17);
+    wall(236, 180, 17, 58);
+    wall(303, 238, 17, 58);
+    wall(57, 350, 306, 76);
+    wall(147, 279, 173, 17);
+    wall(130, 39, 17, 70);
+    
+    for(var i = -2; i < 4; ++i){
+    awardGiver(147, 200 + i * 10, 89, 10, i);
+    }
+    for(var i = 0; i < 11; ++i){
+    awardGiver(147 + i * 10, 238, 10, 41, i + 5);
+    }
+    for(var i = 0; i < 4; ++i){
+    awardGiver(253, 269 + -i * 10, 50, 10, i + 17);
+    }
+    for(var i = 0; i < 7; ++i){
+    awardGiver(253 + i * 10, 197, 10, 42, i + 25);
+    }
+    for(var i = 0; i < 10; ++i){
+    awardGiver(320, 197 + i * 10, 43, 10, i + 33);
+    }
+    for(var i = 0; i < 23; ++i){
+    awardGiver(353 + -i * 10, 296, 10, 54, i + 43);
+    }
+    for(var i = 0; i < 29; ++i){
+    awardGiver(57, 340 + -i * 10, 73, 10, i + 66);
+    }
+    
+    fill("#00ff2f");
+    rect(57, 109, 73, 10);
+    rect(303, 197, 17, 41);
+    for(var i = 0; i < players.length; ++i){
+    if(touching(57, 109, 73, 10, players[i].x, players[i].y) && !speed_inc){
+        players[i].sp_cap += 0.1;
+        speed_inc = true;
+    }
+    
+    if(touching(303, 197, 17, 41, players[i].x, players[i].y)){
+        speed_inc = false;
+    }
+    }
+    }
+};
+		</script>
+    </body>
+</html>

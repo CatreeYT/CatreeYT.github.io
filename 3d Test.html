@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>New Game</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script src="3DRenderer.js"></script>
+		<script src="3DFPS.js"></script>
+<script>
+let a1 = 0;
+let a2 = 0;
+let a3 = 0;
+
+draw = function() {
+
+    background("#444444");
+	
+    fill("#FFAC11");
+	drawCuboid(cube1.x, cube1.y, cube1.z, 20, 20, 20, a1, a2, a3);
+	drawCuboid(0, 0, 100, 20, 20, 20, 0, 0, 0);
+	fill("#AA0000");
+	draw3D(cube1.x, cube1.y + 60, cube1.z, a1, a2, a3, [
+        new Vector3(-15, -15, 10),
+        new Vector3(15, -15, 10),
+        new Vector3(15, 15, 10),
+        new Vector3(-15, -15, -10),
+        new Vector3(15, -15, -10),
+        new Vector3(15, 15, -10),
+    ], [
+		[4, 1, 2, 5],
+		[4, 1, 0, 3],
+		[3, 0, 2, 5],
+		[3, 4, 5, 3],
+		[0, 1, 2, 0]
+	])
+	
+	if(pressing.e){camPosY += 2;}
+	if(pressing.q){camPosY -= 2;}
+	drawShapes();
+	fill("#000000");
+	rect(400, 0, width, height);
+	rect(0, 400, width, height);
+};
+
+		</script>
+    </body>
+</html>

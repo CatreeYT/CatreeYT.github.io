@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>New Game</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script>
+			function average(numbers){
+    if(numbers.length !== 0){
+        var addedNums = 0;
+        for(var i = 0; i < numbers.length; ++i){
+            addedNums += numbers[i];
+        }
+        return addedNums / numbers.length;
+    } else {
+        return 0;
+    }
+}
+
+function intersects(a,b,c,d,p,q,r,s) {
+  var det, gamma, lambda;
+  det = (c - a) * (s - q) - (r - p) * (d - b);
+  if (det === 0) {
+    return false;
+  } else {
+    lambda = ((s - q) * (r - a) + (p - r) * (s - b)) / det;
+    gamma = ((b - d) * (r - a) + (c - a) * (s - b)) / det;
+    return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+  }
+}
+
+function shapeWithCollision(x, y, lines){
+    this.x = x;
+    this.y = y;
+    this.lines = lines;
+    this.draw = function() {
+        for(var i = 0; i < lines.length; ++i){
+        if(i !== lines.length - 1){
+            line(this.lines[i].x + this.x, this.lines[i].y + this.y, this.lines[i + 1].x + this.x, this.lines[i + 1].y + this.y);
+        } else {
+            line(this.lines[i].x + this.x, this.lines[i].y + this.y, lines[0].x + this.x, lines[0].y + this.y);
+        }
+    }
+    };
+    
+    this.intersectsWith = function(otherShape){
+        for(var i = 0; i < this.lines.length; ++i){
+            var curLine = {
+                s: new PVector(this.lines[i].x + this.x, this.lines[i].y + this.y),
+                e: null
+            };
+            if(i === this.lines.length - 1){
+                curLine.e = new PVector(this.lines[0].x + this.x, this.lines[0].y + this.y);
+            } else {
+                curLine.e = new PVector(this.lines[i+1].x + this.x, this.lines[i+1].y + this.y);
+            }
+            
+            for(var j = 0; j < otherShape.lines.length; ++j){
+                var otherLine = {
+                    s: new PVector(otherShape.lines[j].x + otherShape.x, otherShape.lines[j].y + otherShape.y),
+                    e: null
+                };
+                
+                if(j === otherShape.lines.length - 1){
+                    otherLine.e = new PVector(otherShape.lines[0].x + otherShape.x, otherShape.lines[0].y + otherShape.y);
+                } else {
+                    otherLine.e = new PVector(otherShape.lines[j+1].x + otherShape.x, otherShape.lines[j+1].y + otherShape.y);
+                }
+                if(intersects(curLine.s.x, curLine.s.y, curLine.e.x, curLine.e.y, otherLine.s.x, otherLine.s.y, otherLine.e.x, otherLine.e.y)){return true;}
+            }
+        }
+        return false;
+    };
+    
+}
+
+var plr = new shapeWithCollision(202, 134, [new PVector(0, 0), new PVector(20, 0), new PVector(20, 20), new PVector(0, 20)]);
+
+var fs = 0;
+var cJ = false;
+
+function ground(x, y, lines){
+    var thisShape = new shapeWithCollision(x, y, lines);
+    if(thisShape.intersectsWith(plr)){
+        plr.y -= 0.5;
+        cJ = true;
+        fs = 0;
+    }
+}
+
+var firstShape = new shapeWithCollision(40, 45, [new PVector(10, 10), new PVector(20, 26), new PVector(45, 5),]);
+
+var tringle = new shapeWithCollision(180, 180, [new PVector(0, 0), new PVector(0, 60), new PVector(60, 60)]);
+
+var walls = [];
+
+var drawCasts = 1;
+
+function raycast(x, y, ang, maxDist, precision){
+    var ray = new shapeWithCollision(x, y, [new PVector(0, 0), new PVector(sin(ang) * maxDist, cos(ang) * maxDist)]);
+    
+    var p2check = new PVector(ray.lines[1].x, ray.lines[1].y);
+    
+    var testingRay = new shapeWithCollision(ray.x, ray.y, [new PVector(0, 0), p2check]);
+    
+    var touchingWall = false;
+    for(var i = 0; i < walls.length; ++i){
+        touchingWall = walls[i].intersectsWith(testingRay) ? true : touchingWall;
+    }
+    
+    if(touchingWall){
+        while(touchingWall){
+            p2check.x = average([ray.lines[0].x, p2check.x]);
+            p2check.y = average([ray.lines[0].y, p2check.y]);
+            touchingWall = false;
+            for(var i = 0; i < walls.length; ++i){
+                touchingWall = walls[i].intersectsWith(testingRay) ? true : touchingWall;
+            }
+        } 
+        while(!touchingWall){
+            p2check.x += sin(ang) * precision;
+            p2check.y += cos(ang) * precision;
+            touchingWall = false;
+            for(var i = 0; i < walls.length; ++i){
+                touchingWall = walls[i].intersectsWith(testingRay) ? true : touchingWall;
+            }
+        }
+    }
+    if(drawCasts){
+        testingRay.draw();
+        point(p2check.x + ray.x, p2check.y + ray.y);
+    }
+    return p2check;
+}
+
+function Vector3(x, y, z){
+    this.x = x;
+    this.y = y;
+    this.z = z;
+}
+
+var cube1 = new Vector3(100, 0, 100);
+
+var vertexes = [
+        new Vector3(cube1.x - 25, cube1.y - 25, cube1.z + 25), // 0
+        new Vector3(cube1.x + 25, cube1.y - 25, cube1.z + 25), // 1
+        new Vector3(cube1.x - 25, cube1.y + 25, cube1.z + 25), // 2
+        new Vector3(cube1.x + 25, cube1.y + 25, cube1.z + 25), // 3
+        new Vector3(cube1.x - 25, cube1.y - 25, cube1.z - 25), // 4
+        new Vector3(cube1.x + 25, cube1.y - 25, cube1.z - 25), // 5
+        new Vector3(cube1.x - 25, cube1.y + 25, cube1.z - 25), // 6
+        new Vector3(cube1.x + 25, cube1.y + 25, cube1.z - 25), // 7
+    ];
+
+var rotateZ3D = function(theta) {
+   var sinTheta = sin(theta);
+   var cosTheta = cos(theta);
+   for (var n = 0; n < vertexes.length; n++) {
+      var vertex = vertexes[n];
+      var x = vertex.x;
+      var y = vertex.y;
+      vertex.x = x * cosTheta - y * sinTheta;
+      vertex.y = y * cosTheta + x * sinTheta;
+   }
+};
+
+var rotateX3D = function(theta) {
+   var sinTheta = sin(theta);
+   var cosTheta = cos(theta);
+   for (var n = 0; n < vertexes.length; n++) {
+      var vertex = vertexes[n];
+      var y = vertex.y;
+      var z = vertex.z;
+      vertex.y = y * cosTheta - z * sinTheta;
+      vertex.z = z * cosTheta + y * sinTheta;
+   }
+};
+
+var edges = [
+	[0, 1],
+	[1, 7],
+	[2, 3],
+	[5, 6],
+	[4, 2],
+	[6, 7],
+	[5, 3],
+	[2, 1],
+	[0, 3],
+	[4, 5],
+	[4, 7],
+	[0, 6],
+];
+
+var vertDr = [];
+vertexes.forEach(function(){
+	vertDr.push(null);
+})
+var focusPoint = new Vector3(0, 0, -300);
+
+drawCasts = 0;
+draw = function() {
+	
+    background("#444444");
+	
+	rotateZ3D(1);
+	
+	fill("#000000");
+	rect(400, 0, width, height);
+	rect(0, 400, width, height);
+	
+    for(var verts = 0; verts < vertexes.length; ++verts){
+        walls = [
+            new shapeWithCollision(0, 0, [new PVector(vertexes[verts].z, vertexes[verts].y), new PVector(focusPoint.z, focusPoint.y)])
+        ];
+        var drY = raycast(0, 200, 180, 400, 2);
+        if(drawCasts){
+            for(var i = 0; i < walls.length; ++i){
+                walls[i].draw();
+            }
+        }
+        walls = [
+                new shapeWithCollision(0, 0, [new PVector(vertexes[verts].z, vertexes[verts].x), new PVector(focusPoint.z, focusPoint.x)])
+            ];
+            var drX = raycast(0, 200, 180, 400, 2);
+        if(drawCasts){
+            for(var i = 0; i < walls.length; ++i){
+                walls[i].draw();
+            }
+        }
+        if(!drawCasts){
+            rect(round(drX.y) - 2.5 + 400, round(drY.y) - 2.5 + 400, 5, 5);
+			ctx.strokeStyle = "#FFFFFF";
+			ctx.lineWidth = 1;
+			writeText(verts, round(drX.y) + 400, round(drY.y) + 390);
+        }
+		vertDr[verts] = new PVector(drX.y, drY.y);
+    }
+    ctx.strokeStyle = "#FF0000"
+	ctx.lineWidth = 2;
+	
+	
+	
+	if(pressing.w){cube1.y -= 2;}
+	if(pressing.s){cube1.y += 2;}
+	if(pressing.a){cube1.x -= 2;}
+	if(pressing.d){cube1.x += 2;}
+	if(pressing.q){a1 -= 2;}
+	if(pressing.e){a1 += 2;}
+	if(pressing.z){a2 -= 2;}
+	if(pressing.x){a2 += 2;}
+	if(pressing.ArrowUp){cube1.z -= 2;}
+	if(pressing.ArrowDown){cube1.z += 2;}
+	
+    if(drawCasts){
+        for(var i = 0; i < walls.length; ++i){
+            walls[i].draw();
+        }
+    }
+};
+
+		</script>
+    </body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Platformer</title>
+        <style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script src="3DRenderer.js"></script>
+        <script>
+            var plr = {
+                pos: new PVector(0, 0),
+                fSpd: 0,
+                cJ: false,
+            };
+            var camX = 0;
+            function ground(x, y, w, h){
+                fill("#9e4f00")
+                drawCuboid(x - camX, y, 30, w, 30, h, 0, 0, 0);
+                fill("#00FF00")
+                drawCuboid(x - camX, y - h + 6, 30, w, 30, 6, 0, 0, 0);
+                if(touching(plr.pos.x - 10, plr.pos.y - 10, 20, 20, x - w, y - h + 12, w*2, h*2 - 12)){
+                    if(pressing.ArrowRight){
+                        plr.pos.x -= 2;
+                    }
+                    if(pressing.ArrowLeft){
+                        plr.pos.x += 2;
+                    }
+                }
+                if(touching(plr.pos.x - 10, plr.pos.y - 10, 20, 20, x - w, y - h, w*2, 12)){
+                    plr.pos.y = y-h - 10.1;
+                    plr.fSpd = 0;
+                    plr.cJ = true;
+                }
+            }
+
+			function draw(){
+                if(plr.fSpd !== 0){plr.cJ = false;}
+
+                plr.fSpd += 0.1;
+                plr.pos.y += plr.fSpd;
+
+                if(pressing.ArrowRight){plr.pos.x += 2;}
+                if(pressing.ArrowLeft){plr.pos.x -= 2;}
+                if(pressing.ArrowUp && plr.cJ){plr.fSpd = -3;}
+                camX += (plr.pos.x - camX) / 24;
+			    background("#29d4ff")
+                ground(100, 200, 100, 100);
+                ground(250, 150, 50, 10)
+                fill("#FF0000")
+                drawCuboid(plr.pos.x - camX, plr.pos.y, 30, 10, 10, 10, 0, 0, 0);
+
+
+                fill("#000000")
+                rect(400, 0, width, height);
+                rect(0, 400, width, height);
+
+                drawShapes();
+			}
+		</script>
+    </body>
+</html>

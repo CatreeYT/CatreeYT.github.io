@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Portal</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script>
+		
+			var timer = 0;
+			var timerRunning = false;
+			
+			function timerCycle(){
+				if(timerRunning){
+					timer += 0.01;
+					setTimeout(timerCycle, 10);
+				}
+			}
+			
+			keyDown = function(key){
+				if(!timerRunning){
+					timerRunning = true;
+					timerCycle();
+				}
+			}
+		
+			var vector2 = function(x, y){
+this.x = x;
+this.y = y;
+};
+var slope = function(x1, y1, x2, y2){
+return (y2 - y1) / (x2 - x1);
+};
+var find_angle = function(A,B,C) {
+    var AB = Math.sqrt(Math.pow(B.x-A.x,2)+ Math.pow(B.y-A.y,2));    
+    var BC = Math.sqrt(Math.pow(B.x-C.x,2)+ Math.pow(B.y-C.y,2)); 
+    var AC = Math.sqrt(Math.pow(C.x-A.x,2)+ Math.pow(C.y-A.y,2));
+    return (Math.acos((BC*BC+AB*AB-AC*AC)/(2*BC*AB))) * 180/Math.PI;
+};
+var slopeOfShot;
+var shotColor;
+var shotDirection;
+var plrPosShot = new vector2();
+
+var player = new vector2(150, 150);
+
+function die(){
+	player.x = spawns[chamber].x;
+	player.y = spawns[chamber].y;
+	fs = 0;
+	for(var i = 0; i < enPells.length; ++i){
+		let t = enPells[i];
+		t.x = t.spX;
+		t.y = t.spY;
+		t.angle = t.spAngle;
+	}
+}
+
+var physObjs = [
+    {
+        pos: new vector2(230, 319),
+        sz: new vector2(20, 20),
+        col: "#3ba7ff",
+        fs: 0,
+        hs: 0,
+        ctw: {
+            r: true,
+            l: true,
+            d: true,
+            t: true,
+        },
+        loaded: false,
+        type: "box"
+    },
+    {
+        pos: new vector2(230, 208),
+        sz: new vector2(20, 20),
+        col: "#3ba7ff",
+        fs: 0,
+        hs: 0,
+        ctw: {
+            r: true,
+            l: true,
+            d: true,
+            t: true,
+        },
+        loaded: false,
+        type: "box"
+    },
+    {
+        pos: new vector2(150, 119),
+        sz: new vector2(20, 20),
+        col: "#3ba7ff",
+        fs: 0,
+        hs: 0,
+        ctw: {
+            r: true,
+            l: true,
+            d: true,
+            t: true,
+        },
+        loaded: false,
+        type: "box"
+    },
+    {
+        pos: new vector2(150, 119),
+        sz: new vector2(20, 20),
+        col: "#3ba7ff",
+        fs: 0,
+        hs: 0,
+        ctw: {
+            r: true,
+            l: true,
+            d: true,
+            t: true,
+        },
+        loaded: false,
+        type: "box"
+    },
+    {
+        pos: new vector2(150, 119),
+        sz: new vector2(20, 20),
+        col: "#a600ff",
+        fs: 0,
+        hs: 0,
+        ctw: {
+            r: true,
+            l: true,
+            d: true,
+            t: true,
+        },
+        loaded: false,
+        type: "box"
+    },
+	];
+    
+var physObjsStarting = [];
+    
+	function enPell(x, y, angle, spX, spY, spAngle){
+		this.x = x;
+		this.y = y;
+		this.spX = spX;
+		this.spY = spY;
+		this.angle = angle;
+		this.spAngle = spAngle;
+		
+		this.loaded = false;
+		this.ctw = {
+            r: true,
+            l: true,
+            d: true,
+            t: true,
+			};
+		this.draw = function(){
+			fill("#FFFF00");
+			rect(this.x, this.y, 5, 5);
+		};
+		this.move = function(){
+			this.x += sin(this.angle) * 2;
+			this.y += cos(this.angle) * 2;
+			
+			if(touching(this.x, this.y, 5, 5, player.x, player.y, 20, 20)){
+				die()
+			}
+			
+		};
+		
+		this.update = function(){
+			this.draw();
+			this.move();
+		};
+	}
+	
+	function enReciever(x, y, w, h, recieved){
+		this.activated = recieved;
+		fill("#CCCCCC");
+		rect(x, y, w, h);
+		for(var i = 0; i < enPells.length; ++i){
+			let t = enPells[i];
+			if(touching(x, y, w, h, t.x, t.y, 5, 5) && !this.activated){
+				t.loaded = false;
+				this.activated = true;
+				return true;
+			}
+		}
+	}
+	
+	var enPells = [
+		new enPell(160, 10, 0, 160, 10, 0)
+	];
+	
+    for(var i = 0; i < physObjs.length; ++i){
+        physObjsStarting.push(new vector2(physObjs[i].pos.x, physObjs[i].pos.y));
+    }
+    
+var fSinceChamber = 0;
+
+var spawns = [
+    {x: 150, y: 150},
+    {x: 50, y: 318},
+    {x: 73, y: 317},
+    {x: 50, y: 321},
+    {x: 50, y: 213},
+	{x: 117, y: 213},
+	{x: 117, y: 213},
+    ];
+
+var fs = 0;
+var cJ = false;
+
+var chamber = 6;
+
+var portals = {
+    bluePortal: {
+    x: 221,
+    y: 145,
+    dir: "left",
+    active: true
+    },
+    orangePortal: {
+    x: 145,
+    y: 36,
+    dir: "right",
+    active: true
+    }
+};
+
+var canTouchWalls = {
+left: true,
+right: true,
+floor: true,
+ceiling: true
+};
+
+var elevatorHeight;
+var instancedElevator = false;
+
+var portalGunLv = 0;
+
+var portalBall = false;
+var portalBallPos = new vector2();
+
+var touching = function(x, y, w, h, test_x, test_y, test_w, test_h){
+    if(test_w === undefined || test_w === null || test_w === 0){test_w = 1;}
+    if(test_h === undefined || test_h === null || test_h === 0){test_h = 1;}
+if(test_x + test_w > x /*Left*/ && test_x < x + w /*Right*/ && test_y + test_h > y /*Top*/ && test_y < y + h /*Bottom*/){
+    return true;
+} else {
+return false;
+}
+};
+var inRange = function(min, max, val){
+if(val > max || val < min){return false;}
+return true;
+};
+
+var button = function(x, y){
+    fill("#FF0000");
+    var touchButton = false;
+    for(var i = 0; i < physObjs.length; ++i){
+        if(touching(x, y, 30, 10,
+            physObjs[i].pos.x,
+            physObjs[i].pos.y,
+            physObjs[i].sz.x,
+            physObjs[i].sz.y
+        ) && physObjs[i].loaded){touchButton = true;}
+    }
+    
+    if(touching(x, y, 30, 10, player.x, player.y, 20, 20)){
+        touchButton = true;
+    }
+    
+    if(touchButton){
+        rect(x, y + 5, 30, 5);
+        return true;
+    } else {
+        rect(x, y, 30, 10);
+    }
+    
+    return false;
+};
+
+var wall = function(x, y, w, h){
+    fill("#c7c7c7");
+    rect(x, y, w, h);
+    if(player.x + 22 > x && player.x + 22 < x + 3 && player.y + 20 > y && player.y < y + h && canTouchWalls.left){player.x = x - 22;} // LEFT
+    if(player.x < x + w + 2 && player.x > x + w - 2 && player.y + 20 > y && player.y < y + h && canTouchWalls.right){player.x = x + w + 1;} // RIGHT
+    if(player.x + 20 > x - 2 && player.x < x + w + 2 && player.y + 20 > y - 2 && player.y < y + 3 && canTouchWalls.floor){player.y = y - 20; fs = 0; cJ = true;} // TOP
+    if(player.x + 20 > x - 2 && player.x < x + w + 2 && player.y > y + h - 4 && player.y < y + h + 2 && canTouchWalls.ceiling){fs = 0; player.y = y + h + 3;} // BOTTOM
+    
+    for(var i = 0; i < physObjs.length; ++i){
+        if(touching(x + 2, y, w - 4, 4, // Floor / Wall xywh
+        physObjs[i].pos.x,  // OBJ x
+        physObjs[i].pos.y,  // OBJ Y
+        physObjs[i].sz.x,   // OBJ W
+        physObjs[i].fs + physObjs[i].sz.y) && physObjs[i].ctw.t){ // OBJ H
+            physObjs[i].pos.y = y - physObjs[i].sz.y;
+            physObjs[i].fs = 0;
+            physObjs[i].hs *= 0.95;
+        } // FLOOR
+        
+        if(touching(x, y, 4, h, // Floor / Wall xywh
+        physObjs[i].pos.x + physObjs[i].sz.x - 3,  // OBJ x
+        physObjs[i].pos.y,  // OBJ Y
+        3,   // OBJ W
+        physObjs[i].sz.y) && physObjs[i].ctw.l){ // OBJ H
+            physObjs[i].pos.x = x - physObjs[i].sz.x;
+        } // LEFT PART OF WALL CHECK
+        
+        if(touching(x + w - 4, y, 4, h,
+        physObjs[i].pos.x,
+        physObjs[i].pos.y,
+        3,
+        physObjs[i].sz.y
+        ) && physObjs[i].ctw.r){
+            physObjs[i].pos.x = x + w;
+        } // RIGHT
+        
+        if(touching(x, y + h - 4, w, 4,
+        physObjs[i].pos.x,
+        physObjs[i].pos.y,
+        physObjs[i].sz.w,
+        3
+        ) && physObjs[i].ctw.b){
+            physObjs[i].fs = 0;
+            physObjs[i].pos.y = y + h + 3;
+        } // BOTTOM
+    }
+    
+    if(portalBall){
+        if(touching(x, y, 5, h, portalBallPos.x, portalBallPos.y, 6, 6)){
+            portalBall = false;
+            if(shotColor === "blue"){
+            portals.bluePortal.x = x - 3;
+            portals.bluePortal.y = portalBallPos.y - 15;
+            portals.bluePortal.dir = "left";
+            if(portals.bluePortal.y < y){
+                portals.bluePortal.y = y;
+            }
+            if(portals.bluePortal.y + 30 > y + h){
+                portals.bluePortal.y = y + h - 30;
+            }
+            portals.bluePortal.active = true;
+            } else {
+               portals.orangePortal.x = x - 3;
+            portals.orangePortal.y = portalBallPos.y - 15;
+            portals.orangePortal.dir = "left";
+            if(portals.orangePortal.y < y){
+                portals.orangePortal.y = y;
+            }
+            if(portals.orangePortal.y + 30 > y + h){
+                portals.orangePortal.y = y + h - 30;
+            } 
+            portals.orangePortal.active = true;
+            }
+            if(h < 30){
+                portals.orangePortal.active = false;
+            }
+        }
+        if(touching(x + w - 5, y, 5, h, portalBallPos.x, portalBallPos.y, 6, 6)){
+            portalBall = false;
+            if(shotColor === "blue"){
+            portals.bluePortal.x = x + w;
+            portals.bluePortal.y = portalBallPos.y - 15;
+            portals.bluePortal.dir = "right";
+            if(portals.bluePortal.y < y){
+                portals.bluePortal.y = y;
+            }
+            if(portals.bluePortal.y + 30 > y + h){
+                portals.bluePortal.y = y + h - 30;
+            }
+            portals.bluePortal.active = true;
+            } else {
+                portals.orangePortal.x = x + w;
+            portals.orangePortal.y = portalBallPos.y - 15;
+            portals.orangePortal.dir = "right";
+            if(portals.orangePortal.y < y){
+                portals.orangePortal.y = y;
+            }
+            if(portals.orangePortal.y + 30 > y + h){
+                portals.orangePortal.y = y + h - 30;
+            }
+            portals.orangePortal.active = true;
+            }
+            if(h < 30){
+                portals.bluePortal.active = false;
+            }
+        }
+        if(touching(x + 5, y, w - 10, 4, portalBallPos.x, portalBallPos.y, 6, 6)){
+            portalBall = false;
+        }  
+        if(touching(x + 5, y + h - 4, w - 10, 4, portalBallPos.x, portalBallPos.y, 6, 6)){
+            portalBall = false;
+        }
+    }
+    for(var i = 0; i < enPells.length; ++i){
+	if(touching(x + 2, y, w - 4, 4, // Floor / Wall xywh
+        enPells[i].x,  // OBJ x
+        enPells[i].y,  // OBJ Y
+        5,   // OBJ W
+        5
+		) && enPells[i].ctw.t){ // OBJ H
+			enPells[i].angle = -(enPells[i].angle + 180);
+        } // FLOOR
+        
+        if(touching(x, y, 4, h, // Floor / Wall xywh
+        enPells[i].x,  // OBJ x
+        enPells[i].y,  // OBJ Y
+        5,   // OBJ W
+        5) && enPells[i].ctw.l){ // OBJ H
+            enPells[i].angle *= -1;
+        } // LEFT PART OF WALL CHECK
+        
+        if(touching(x + w - 4, y, 4, h,
+        enPells[i].x,  // OBJ x
+        enPells[i].y,  // OBJ Y
+        5,   // OBJ W
+        5
+        ) && enPells[i].ctw.r){
+            enPells[i].angle *= -1;
+        } // RIGHT
+        
+        if(touching(x, y + h - 4, w, 4,
+		enPells[i].x,  // OBJ x
+        enPells[i].y,  // OBJ Y
+        5,   // OBJ W
+        5
+        ) && enPells[i].ctw.b){
+            enPells[i].angle = -(enPells[i].angle + 180);
+        } // BOTTOM
+		}
+	};
+    
+var swapVars = function(v1, v2){
+var c = v1;
+v1 = v2;
+v2 = c;
+};
+
+var door = function(x, y, openCase){
+    if(openCase === undefined){
+    if(!touching(x - 10, y, 30, 40, player.x, player.y, 20, 20)){
+        wall(x, y, 10, 20);
+    wall(x, y + 20, 10, 20);
+    fill("#00d692");
+    rect(x, y, 10, 20);
+    rect(x, y + 20, 10, 20);
+    }
+    } else {
+        if(openCase === false){
+            wall(x, y, 10, 20);
+            wall(x, y + 20, 10, 20);
+            fill("#00d692");
+            rect(x, y, 10, 20);
+            rect(x, y + 20, 10, 20);
+        }
+    }
+};
+
+var elevator = function(x, y){
+    if(!instancedElevator){
+        elevatorHeight = y;
+        instancedElevator = true;
+    }
+    fill("#c7c7c7");
+    rect(x, elevatorHeight, 38, 13);
+    rect(x, elevatorHeight + 40, 38, 13);
+    rect(x + 0, elevatorHeight + 13, 8, 40);
+    rect(x + 30, elevatorHeight + 13, 8, 40);
+    fill("#4f4f4f");
+    rect(x + 13, -1, 10, elevatorHeight + 1);
+    fill("#00ff15");
+    rect(x + 8, elevatorHeight + 13, 22, 27);
+    
+    if(touching(x, elevatorHeight, 38, 53, player.x, player.y, 20, 20)){
+        player.x = x + 9;
+        player.y = elevatorHeight + 20;
+        fill("#ffdc7a");
+        rect(player.x, player.y, 20, 20);
+        fs = 0;
+        elevatorHeight -= 2;
+        instancedElevator = true;
+    }
+    
+    if(elevatorHeight + 100 < 0){
+        ++chamber;
+        player.x = spawns[chamber].x;
+        player.y = spawns[chamber].y;
+        fSinceChamber = 0;
+        instancedElevator = false;
+        
+        for(var i = 0; i < physObjs.length; ++i){
+            physObjs[i].loaded = false;
+        }
+        
+        portals.bluePortal.active = false;
+        portals.orangePortal.active = false;
+    }
+};
+var fizzler = function(x, y, h){
+    fill("#0000FF");
+    rect(x, y, 4, h);
+    if(touching(x, y, 4, h, player.x, player.y, 20, 20)){
+        if(portalGunLv > 0){
+        portals.bluePortal.active = false;
+        }
+        if(portalGunLv > 1){
+        portals.orangePortal.active = false;
+        }
+    }
+};
+
+player.x = spawns[chamber].x;
+player.y = spawns[chamber].y;
+
+draw = function() {
+    background("#444444");
+    fill("#FFFFFF");
+	rect(8, 0, 50, 15);
+	writeText(floor(timer/60) + " : " + (floor(timer*100) / 100) % 60, 10, 10);
+    if(fs > 0.01 || fs < -0.01){
+        cJ = false;
+    }
+    
+    if(pressing.ArrowUp && cJ){
+        fs = -3;
+    }
+    
+    for(var i = 0; i < physObjs.length; ++i){
+        if(physObjs[i].loaded){
+        physObjs[i].fs += 0.1;
+        physObjs[i].pos.y += physObjs[i].fs;
+        
+        if(touching(player.x, player.y, 3, 20, physObjs[i].pos.x + physObjs[i].sz.x - 3, physObjs[i].pos.y, 3, physObjs[i].sz.y)){
+        physObjs[i].hs = -1.5;
+        } 
+        
+        if(touching(player.x + 17, player.y, 3, 20, physObjs[i].pos.x, physObjs[i].pos.y, 3, physObjs[i].sz.y)){
+        physObjs[i].hs = 1.5;
+        } 
+        
+        physObjs[i].pos.x += physObjs[i].hs;
+        }
+    }
+    
+    fs += 0.1;
+    player.y += fs;
+    fill("#0000FF");
+    if(portals.bluePortal.active){
+    rect(portals.bluePortal.x, portals.bluePortal.y, 3, 30);
+    wall(portals.bluePortal.x + 3, portals.bluePortal.y - 6, 0, 4);
+    wall(portals.bluePortal.x + 3, portals.bluePortal.y + 31, 0, 4);
+    }
+    if(portals.orangePortal.active){
+    fill("#ffae00");
+    rect(portals.orangePortal.x, portals.orangePortal.y, 3, 30);
+    wall(portals.orangePortal.x + 3, portals.orangePortal.y - 6, 0, 4);
+    wall(portals.orangePortal.x + 3, portals.orangePortal.y + 31, 0, 4);
+    }
+    fill("#ffdc7a");
+    
+    if(touching(portals.bluePortal.x, portals.bluePortal.y, 3, 30, player.x, player.y, 20, 20) && (portals.bluePortal.dir === "left" || portals.bluePortal.dir === "right") && portals.bluePortal.active){
+        
+        if(portals.bluePortal.dir === "left"){
+           if(portals.orangePortal.dir === "right"){ 
+        rect(portals.orangePortal.x + 3,
+        portals.orangePortal.y - (portals.bluePortal.y - player.y + 20) + 20, 
+        player.x + 20 - portals.bluePortal.x, 
+        20);
+        rect(player.x, player.y, 20 - (player.x + 20 - portals.bluePortal.x), 20);
+        
+        if(20 - (player.x + 20 - portals.bluePortal.x) < 2){
+            player.x = portals.orangePortal.x;
+            player.y = portals.orangePortal.y - (portals.bluePortal.y - player.y + 20) + 20;
+        }
+           }
+           if(portals.orangePortal.dir === "left"){
+               rect(
+                   player.x,
+                   player.y,
+                   portals.bluePortal.x - player.x,
+                   20
+                   );
+                rect(
+                    portals.orangePortal.x - (20 - (portals.bluePortal.x - player.x)),
+                    portals.orangePortal.y + (player.y - portals.bluePortal.y),
+                    20 - (portals.bluePortal.x - player.x),
+                    20
+                    );
+                    
+                if(player.x > portals.bluePortal.x){
+                    player.x = portals.orangePortal.x - 20;
+                    player.y = portals.orangePortal.y + (player.y - portals.bluePortal.y);
+                }
+           }
+           canTouchWalls.left = false;
+        canTouchWalls.right = true;
+        }
+        
+        if(portals.bluePortal.dir === "right"){
+            if(portals.orangePortal.dir === "right"){
+            rect(portals.bluePortal.x + 3,
+            player.y,
+            (player.x + 20) - portals.bluePortal.x + 2,
+            20);
+            
+            rect(portals.orangePortal.x + 3,
+            portals.orangePortal.y - (portals.bluePortal.y - player.y + 20) + 20,
+            20 - ((player.x + 20) - portals.bluePortal.x + 2),
+            20);
+            
+            if(player.x + 20 - portals.bluePortal.x < 2){
+            player.x = portals.orangePortal.x;
+            player.y = portals.orangePortal.y - (portals.bluePortal.y - player.y + 20) + 20;
+            }
+            }
+            if(portals.orangePortal.dir === "left"){
+                rect(
+                    portals.orangePortal.x + (player.x + 20 - portals.bluePortal.x) - 20,
+                    portals.orangePortal.y - (portals.bluePortal.y - player.y + 20) + 20,
+                    20 - (player.x + 20 - portals.bluePortal.x),
+                    20
+                    );
+                rect(portals.bluePortal.x + 3,
+            player.y,
+            (player.x + 20) - portals.bluePortal.x + -2,
+            20);
+                
+                if(player.x + 20 - portals.bluePortal.x < 2){
+            player.x = portals.orangePortal.x - 20;
+            player.y = portals.orangePortal.y - (portals.bluePortal.y - player.y + 20) + 20;
+            }
+                
+            }
+                        
+            canTouchWalls.right = false;
+            canTouchWalls.left = true;
+        }
+        canTouchWalls.floor = true;
+        canTouchWalls.ceiling = true;
+        
+    } else if (touching(portals.orangePortal.x, portals.orangePortal.y, 3, 30, player.x, player.y, 20, 20) && (portals.orangePortal.dir === "left" || portals.orangePortal.dir === "right") && portals.bluePortal.active){
+        
+        if(portals.orangePortal.dir === "right"){
+        if(portals.bluePortal.dir === "left"){
+        rect(portals.orangePortal.x + 3,
+        player.y, 
+        player.x + 20 - portals.orangePortal.x, 
+        20);
+        
+        rect(
+        portals.bluePortal.x - (20 - (player.x + 20 - portals.orangePortal.x)),
+        portals.bluePortal.y - (portals.orangePortal.y - player.y + 20) + 20,
+        20 - (player.x + 20 - portals.orangePortal.x),
+        20
+        );
+        
+        if(portals.orangePortal.x + 3 > player.x + 20){
+            player.x = portals.bluePortal.x - 20;
+            player.y = portals.bluePortal.y - (portals.orangePortal.y - player.y + 20) + 20;
+        }
+        
+        canTouchWalls.left = true;
+        canTouchWalls.right = false;
+        }
+        if(portals.bluePortal.dir === "right"){
+            rect(
+                portals.orangePortal.x + 3,
+                player.y,
+                (player.x + 20) - (portals.orangePortal.x + 3),
+                20
+            );
+            rect(
+                portals.bluePortal.x + 3,
+                portals.bluePortal.y + (player.y - portals.orangePortal.y),
+                20 - ((player.x + 20) - (portals.orangePortal.x + 3)),
+                20
+                );
+                
+                if(portals.orangePortal.x + 3 > player.x + 20){
+                    player.x = portals.bluePortal.x + 3;
+                    player.y = portals.bluePortal.y + (player.y - portals.orangePortal.y);
+                }
+        }
+        }
+        if(portals.orangePortal.dir === "left"){
+            if(portals.bluePortal.dir === "right"){
+                rect(
+                player.x,
+                player.y,
+                portals.orangePortal.x - player.x,
+                20);
+                
+                rect(
+                    portals.bluePortal.x + 3,
+                    portals.bluePortal.y + (player.y - portals.orangePortal.y),
+                    (player.x + 20) - portals.orangePortal.x,
+                    20
+                    );
+                    
+                if(portals.orangePortal.x - player.x < 2){
+                    player.x = portals.bluePortal.x + 3;
+                    player.y = portals.bluePortal.y + (player.y - portals.orangePortal.y);
+                }
+            }
+            if(portals.bluePortal.dir === "left"){
+                rect(
+                    portals.orangePortal.x - (20 - ((player.x + 20) - (portals.orangePortal.x + 3))),
+                    player.y,
+                    20 - ((player.x + 20) - (portals.orangePortal.x + 3)),
+                    20
+                    );
+                    
+                rect(portals.bluePortal.x - (((player.x + 20) - (portals.orangePortal.x + 3))),
+                portals.bluePortal.y + (player.y - portals.orangePortal.y),
+                ((player.x + 20) - (portals.orangePortal.x + 3)),
+                20
+                );
+                
+                if(player.x > portals.orangePortal.x){
+        player.x = portals.bluePortal.x - 20;
+        player.y = portals.bluePortal.y - (portals.orangePortal.y - player.y + 20) + 20;
+        }
+            }
+            
+            canTouchWalls.left = false;
+            canTouchWalls.right = true;
+        }
+        canTouchWalls.floor = true;
+        canTouchWalls.ceiling = true;
+    
+    }else {
+        canTouchWalls.left = true;
+        canTouchWalls.right = true;
+        canTouchWalls.floor = true;
+        canTouchWalls.ceiling = true;
+        rect(player.x, player.y, 20, 20);
+    }
+    
+    
+    for(var i = 0; i < physObjs.length; ++i){
+        
+        if(physObjs[i].loaded){
+        
+            fill(physObjs[i].col);
+            if(touching(portals.bluePortal.x, portals.bluePortal.y, 3, 30, physObjs[i].pos.x, physObjs[i].pos.y, physObjs[i].sz.x, physObjs[i].y)){
+        rect(
+        portals.orangePortal.x + 3,
+        portals.orangePortal.y - (portals.bluePortal.y - physObjs[i].pos.y + physObjs[i].sz.y) + physObjs[i].sz.y, 
+        physObjs[i].pos.x + physObjs[i].sz.x - portals.bluePortal.x, 
+        physObjs[i].sz.y);
+        
+        physObjs[i].ctw.l = false;
+        physObjs[i].ctw.r = true;
+        physObjs[i].ctw.t = true;
+        physObjs[i].ctw.b = true;
+        
+        rect(physObjs[i].pos.x, physObjs[i].pos.y, physObjs[i].sz.x - (physObjs[i].pos.x + physObjs[i].sz.x - portals.bluePortal.x), physObjs[i].sz.y);
+        if(physObjs[i].sz.x - (physObjs[i].pos.x + physObjs[i].sz.x - portals.bluePortal.x) < 2){
+            physObjs[i].pos.x = portals.orangePortal.x;
+            physObjs[i].pos.y = portals.orangePortal.y - (portals.bluePortal.y - physObjs[i].pos.y + physObjs[i].sz.y) + physObjs[i].sz.y;
+        }
+    } else if (touching(portals.orangePortal.x, portals.orangePortal.y, 3, 30, physObjs[i].pos.x, physObjs[i].pos.y, physObjs[i].sz.x, physObjs[i].sz.y)){
+        rect(portals.orangePortal.x + 3,
+        physObjs[i].pos.y, 
+        physObjs[i].pos.x + physObjs[i].sz.x - portals.orangePortal.x, 
+        physObjs[i].sz.y);
+        
+        rect(
+        portals.bluePortal.x - (physObjs[i].sz.x - (physObjs[i].pos.x + physObjs[i].sz.x - portals.orangePortal.x)),
+        portals.bluePortal.y - (portals.orangePortal.y - physObjs[i].pos.y + physObjs[i].sz.y) + physObjs[i].sz.y,
+        physObjs[i].sz.x - (physObjs[i].pos.x + physObjs[i].sz.x - portals.orangePortal.x),
+        physObjs[i].sz.y
+        );
+        
+        physObjs[i].ctw.l = true;
+        physObjs[i].ctw.r = false;
+        physObjs[i].ctw.b = true;
+        physObjs[i].ctw.t = true;
+        
+        if(touching(portals.orangePortal.x, portals.orangePortal.y, 3, 30, physObjs[i].pos.x + physObjs[i].sz.x, physObjs[i].pos.y)){
+        physObjs[i].pos.x = portals.bluePortal.x - physObjs[i].sz.x;
+        physObjs[i].pos.y = portals.bluePortal.y - (portals.orangePortal.y - physObjs[i].pos.y + physObjs[i].sz.y) + physObjs[i].sz.y;
+        }
+    
+    } else {
+            
+        physObjs[i].ctw.l = true;
+        physObjs[i].ctw.r = true;
+        physObjs[i].ctw.t = true;
+        physObjs[i].ctw.b = true;
+            
+            rect(physObjs[i].pos.x, physObjs[i].pos.y, physObjs[i].sz.x, physObjs[i].sz.y);
+        }
+        }
+        }
+    // Phys objs portal checks
+    
+    
+    if(pressing.ArrowLeft){
+        player.x-=1.5;
+    }
+    if(pressing.ArrowRight){
+        player.x+=1.5;
+    }
+    
+    ++fSinceChamber;
+    enPells[0].loaded = true;
+	for(var i = 0; i < enPells.length; ++i){
+		if(enPells[i].loaded){enPells[i].update();}
+	}
+	
+    switch(chamber){
+    case 0:
+    wall(144, 175, 80, 100);
+    wall(224, 81, 20, 194);
+    wall(124, 20, 20, 255);
+    wall(144, 66, 100, 16);
+    wall(144, 20, 170, 16);
+    wall(314, 20, 20, 348);
+    wall(60, 352, 254, 16);
+    wall(124, 275, 12, 37);
+    wall(60, 20, 64, 267);
+    wall(60, 287, 12, 65);
+    door(124, 312);
+    elevator(79, 299);
+    break;
+    case 1:
+        portals.bluePortal.active = true;
+        portals.orangePortal.active = true;
+        physObjs[0].loaded = true;
+        
+        portals.bluePortal.x = 150;
+        portals.bluePortal.y = 308;
+        portals.orangePortal.x = 80;
+    
+    if(inRange(0, 360, fSinceChamber % 1080)) {portals.orangePortal.y = 44;}
+    if(inRange(360, 720, fSinceChamber % 1080)) {portals.orangePortal.y = 145;}
+    if(inRange(720, 1080, fSinceChamber % 1080)) {
+        portals.orangePortal.y = 308;
+        portals.orangePortal.x = 190;
+    }
+    wall(0, 175, 400, 29);
+    wall(213, 112, 10, 23);
+    
+    wall(-1, 73, 401, 39);
+    
+    wall(0, 338, 305, 20);
+    wall(0, 268, 294, 10);
+    wall(153, 268, 36, 90);
+    wall(291, 268, 15, 90);
+    
+    door(213, 135, button(127, 63));
+    elevator(230, 122);
+    break;
+    case 2:
+        
+        portals.bluePortal.active = true;
+        portals.orangePortal.active = true;
+        
+        portals.orangePortal.x = 328;
+        portals.orangePortal.y = 159;
+        portals.orangePortal.dir = "left";
+        if(portalGunLv === 0){
+            if(inRange(360, 540, fSinceChamber % 540)){
+                portals.bluePortal.x = 31;
+                portals.bluePortal.y = 308;
+                portals.bluePortal.dir = "right";
+            }
+            if(inRange(180, 360, fSinceChamber % 540)){
+                portals.bluePortal.x = 267;
+                portals.bluePortal.y = 247;
+                portals.bluePortal.dir = "left";
+            }
+            if(inRange(0, 180, fSinceChamber % 540)){
+                portals.bluePortal.x = 31;
+                portals.bluePortal.y = 247;
+                portals.bluePortal.dir = "right";
+            }
+            fill("#e3e3e3");
+            rect(130, 261, 8, 6);
+            rect(138, 262, 4, 4);
+            fill("#2b2b2b");
+            rect(133, 268, 2, 4);
+            rect(131, 272, 2, 4);
+            rect(136, 272, 2, 4);
+            if(touching(130, 261, 12, 6, player.x, player.y, 20, 20)){
+                portalGunLv = 1;
+            }
+        }
+        
+        wall(0, 337, 331, 10);
+        wall(0, 189, 30, 148);
+        wall(270, 189, 60, 148);
+        wall(30, 277, 240, 10);
+        wall(0, 78, 5, 35);
+        elevator(0, 137);
+        break; 
+        case 3:
+            portals.orangePortal.active = true;
+            portals.orangePortal.x = 304;
+            portals.orangePortal.y = 311;
+            portals.orangePortal.dir = "left";
+            wall(5, 341, 95, 10);
+            wall(5, 281, 95, 10);
+            wall(225, 341, 95, 10);
+            wall(5, 291, 13, 50);
+            wall(5, 231, 13, 50);
+            wall(307, 291, 13, 50);
+            elevator(50, 228);
+        break;
+        case 4:
+            portals.orangePortal.x = 21;
+            portals.orangePortal.y = 203;
+            portals.orangePortal.dir = "right";
+            portals.orangePortal.active = true;
+            physObjs[2].loaded = true;
+            wall(10, 233, 119, 10);
+            wall(121, 233, 10, 123);
+            wall(191, 233, 10, 123);
+            wall(201, 233, 183, 10);
+            wall(121, 356, 80, 10);
+            wall(10, 56, 10, 177);
+            wall(304, 56, 10, 137);
+            wall(20, 56, 284, 10);
+            door(304, 193, button(58, 223));
+            elevator(332, 180);
+        break;
+		case 5:
+            if(fSinceChamber === 1){
+            physObjs[3].loaded = true;
+            physObjs[3].pos.x = 58;
+            physObjs[4].loaded = true;
+            physObjs[4].pos.x = 186;
+            }
+            wall(107, 233, 285, 133);
+            wall(181, 151, 212, 10);
+            wall(30, 151, 27, 10);
+            wall(219, 59, 10, 134);
+            wall(5, 59, 25, 307);
+            wall(30, 340, 77, 26);
+            wall(30, 59, 370, 10);
+            door(219, 193, button(122, 223));
+            door(219, 193, button(169, 223));
+            var through = false;
+            
+            if(touching(248, 69, 157, 164, player.x, player.y, 20, 20)){
+                through = true;
+            }
+            if(through){
+                wall(357, 161, 29, 72);
+                portals.orangePortal.x = 230;
+                portals.orangePortal.y = 121;
+                portals.orangePortal.active = true;
+            } else {
+                portals.orangePortal.x = 31;
+                portals.orangePortal.y = 121;
+                portals.orangePortal.dir = "right";
+                portals.orangePortal.active = true;
+            }
+            door(219, 193, !through);
+            
+            elevator(345, 98);
+        break;
+		case 6:
+			wall(107, 233, 285, 133);
+			door(100, 100, function(){
+				var newRecieve;
+				if(fSinceChamber === 1){newRecieve = new enReciever(10, 10, 50, 10, false)} else {
+					newRecieve = new enReciever(10, 10, 50, 10, newRecieve.activated);
+				}
+				return newRecieve.activated;
+			});
+		break;
+    }
+    
+    if(player.y > 410){
+        die();
+    }
+    if(pressing.r){
+        die();
+        fSinceChamber = 0;
+        for(var i = 0; i < physObjs.length; ++i){
+            physObjs[i].pos.x = physObjsStarting[i].x;
+            physObjs[i].pos.y = physObjsStarting[i].y;
+        }
+    }
+    
+    if(portalBall){
+        if(shotDirection === "right"){
+        portalBallPos.x += sin(slopeOfShot) * 4;
+        } else {
+        portalBallPos.x -= sin(slopeOfShot) * 4;
+        }
+        
+        portalBallPos.y -= cos(slopeOfShot) * 4;
+        
+        if(shotColor === "blue"){fill("#0000FF");}
+        if(shotColor === "orange"){fill("#ffbb00");}
+        rect(portalBallPos.x, portalBallPos.y, 6, 6);
+    }
+};
+
+mouseClicked = function(e){
+        slopeOfShot = find_angle(new vector2(player.x + 10, 0), player, new vector2(mouseX, mouseY));
+    
+    if(mouseX > player.x + 10){
+        shotDirection = "right";
+    } else {
+        shotDirection = "left";
+    }
+    
+    if(portalGunLv === 1){
+        if(e.button === 0){
+        portalBall = true;
+        portalBallPos = new vector2(player.x + 7, player.y + 7);
+        plrPosShot = new vector2(player.x + 7, player.y + 7);
+        shotColor = "blue";
+        }
+    }
+    if(portalGunLv === 2){
+        if(e.button === 0){
+        portalBall = true;
+        portalBallPos = new vector2(player.x + 10, player.y + 7);
+        plrPosShot = new vector2(player.x + 10, player.y + 10);
+        shotColor = "blue";
+        }
+        
+        if(e.button === 2){
+            portalBall = true;
+        portalBallPos = new vector2(player.x + 10, player.y + 7);
+        plrPosShot = new vector2(player.x + 10, player.y + 10);
+        shotColor = "orange";
+        }
+    }
+};
+		</script>
+    </body>
+</html>

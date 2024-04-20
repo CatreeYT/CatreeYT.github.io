@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Flappy Box</title>
+		<style>
+			#Canvas {
+				position: absolute;
+				left: 0px;
+				top: 0px;
+			}
+		</style>
+    </head>
+    <body>
+        <canvas id="Canvas" width="" height="">Cannot load Canvas tag with this browser</canvas>
+        
+		<script src="canvasFuncs.js"></script>
+        <script>
+		framerate(70)
+			var y = 100;
+var fs = 0;
+var pipeX1 = 400;
+var pipeY1 = random(-200, -1) - 200;
+var pipeX2 = 600;
+var pipeY2 = random(-200, -1) - 200;
+var cJ = true;
+var gotPt1 = false;
+var gotPt2 = false;
+var points = 0;
+var speed = 2;
+var keyUp = function(key){cJ = true;};
+draw = function() {
+    if(inputStart["ArrowUp"] && cJ){
+        fs = -4;
+        cJ = false;
+    }
+    if(y +  20 > 370){
+        y -= y + 380;
+        speed = 2;
+		y = 100;
+		fs = 0;
+		pipeX1 = 400;
+		pipeY1 = random(-200, -1) - 200;
+		pipeX2 = 600;
+		pipeY2 = random(-200, -1) - 200;
+		}
+    background("#00FFFF");
+    pipeX1-=speed;
+    fill("#00FF00");
+    rect(pipeX1, pipeY1, 30, 200);
+    rect(pipeX1, pipeY1 + 300, 30, 400);
+    fill("#00f044");
+    rect(pipeX1, pipeY1 + 180, 30, 20);
+    rect(pipeX1, pipeY1 + 300, 30, 20);
+    fill("#abffb6");
+    rect(pipeX1 + 5, pipeY1, 5, 180);
+    rect(pipeX1 + 3, pipeY1 + 181, 5, 19);
+    rect(pipeX1 + 5, pipeY1 + 321, 5, 400);
+    rect(pipeX1 + 3, pipeY1 + 301, 5, 19);
+    fill("#00FF00");
+    if(pipeX1 < -30){pipeX1 = 400; gotPt1 = false; pipeY1 = random(-200, -1) - 200; speed+=0.05;}
+    pipeX2-=speed;
+    if(pipeX2 < -30){pipeX2 = 400; gotPt2 = false; pipeY2 = random(-200, -1) - 200; speed+=0.05;}
+    rect(pipeX2, pipeY2, 30, 200);
+    rect(pipeX2, pipeY2 + 300, 30, 400);
+    fill("#00f044");
+    rect(pipeX2, pipeY2 + 180, 30, 20);
+    rect(pipeX2, pipeY2 + 300, 30, 20);
+    fill("#abffb6");
+    rect(pipeX2 + 5, pipeY2, 5, 180);
+    rect(pipeX2 + 3, pipeY2 + 181, 5, 19);
+    rect(pipeX2 + 5, pipeY2 + 321, 5, 400);
+    rect(pipeX2 + 3, pipeY2 + 301, 5, 19);
+    fill("#00DD00");
+    rect(-1, 380, 410, 40);
+    fill("#8f4c00");
+    rect(-1, 385, 410, 20);
+    if(fs < 5){
+    fs += 0.15;
+    }
+    y+=fs;
+    if(pipeX1 > 70 && pipeX1 < 120 && (pipeY1 + 200 > y || pipeY1 + 300 < y + 20)){speed = 2;
+		y = 100;
+		fs = 0;
+		pipeX1 = 400;
+		pipeY1 = random(-200, -1) - 200;
+		pipeX2 = 600;
+		pipeY2 = random(-200, -1) - 200;}
+    if(pipeX1 > 70 && pipeX1 < 120 && (pipeY1 + 200 < y || pipeY1 + 300 > y + 20) && gotPt1 === false){points++; gotPt1 = true;}
+    if(pipeX2 > 70 && pipeX2 < 120 && (pipeY2 + 200 > y || pipeY2 + 300 < y + 20)){speed = 2;
+		y = 100;
+		fs = 0;
+		pipeX1 = 400;
+		pipeY1 = random(-200, -1) - 200;
+		pipeX2 = 600;
+		pipeY2 = random(-200, -1) - 200;}
+    if(pipeX2 > 70 && pipeX2 < 120 && (pipeY2 + 200 < y || pipeY2 + 300 > y + 20) && gotPt2 === false){points++; gotPt2 = true;}
+    fill("#FFFF00");
+    
+    // Player
+    quad(
+    100 + 10 + cos(fs * 6 + 45) * 10,
+    y + 10 + sin(fs * 6 + 45) * 10,
+    100 + 10 + cos(fs * 6 + 45 + 90) * 10,
+    y + 10 + sin(fs * 6 + 45 + 90) * 10,
+    100 + 10 + cos(fs * 6 + 45 + 180) * 10,
+    y + 10 + sin(fs * 6 + 45 + 180) * 10,
+    100 + 10 + cos(fs * 6 + 45 + 270) * 10,
+    y + 10 + sin(fs * 6 + 45 + 270) * 10
+    );
+    
+    fill("#FFFFFF");
+    rect(10, 10, 60, 20);
+    fill("#000000");
+    writeText(points, 15, 25);
+    fill("#000000");
+	rect(400, 0, width, height);
+	rect(0, 400, width, height);
+};
+		</script>
+    </body>
+</html>
