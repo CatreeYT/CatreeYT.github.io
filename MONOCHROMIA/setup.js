@@ -1,6 +1,7 @@
-let currentMode = 0;
+let currentMode = 2;
 // Gameplay = 0
 // Map Editing = 1
+// Menu = 2
 
 player.jumpForce = 5
 player.extraPixelsStanding = 1

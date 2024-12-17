@@ -10,6 +10,7 @@ let mapEditingData = {
         "SpikeUp",
         "Doorway",
         "Spawn",
+        "Text",
     ]
 }
 // Enter as... [
@@ -41,6 +42,10 @@ function convertEditDataToMap(m, interval){
                 generatedMap.spawnY = c[2]
                 break;
             }
+            case 4: {
+                generatedMap.map[0].push(textObj(c[1], c[2], c[3], c[4]))
+                break;
+            }
         }
     }
     for(let i = 0; i < m[1].length; ++i){
@@ -56,6 +61,11 @@ function convertEditDataToMap(m, interval){
             }
             case 2: {
                 generatedMap.map[1].push(doorway(c[1], c[2]))
+                break;
+            }
+            // DO NOT ADD SPAWNPOINT HERE
+            case 4: {
+                generatedMap.map[1].push(textObj(c[1], c[2], c[3], c[4]))
                 break;
             }
         }
@@ -119,6 +129,19 @@ function renderEditingMap(){
                 }
                 break;
             }
+            case 4: {
+                fill(colorWvB[1-lightState])
+                fontSize(currentlyEditing[i][4])
+                fillText(currentlyEditing[i][3], currentlyEditing[i][1], currentlyEditing[i][2])
+                if(i === mapEditingData.selecting){
+                    fill(128, 128, 128)
+                    rect(currentlyEditing[i][1], currentlyEditing[i][2]-currentlyEditing[i][4], currentlyEditing[i][4], 2)
+                    rect(currentlyEditing[i][1], currentlyEditing[i][2] -2, currentlyEditing[i][4], 2)
+                    rect(currentlyEditing[i][1], currentlyEditing[i][2]-currentlyEditing[i][4], 2, currentlyEditing[i][4])
+                    rect(currentlyEditing[i][1] + currentlyEditing[i][4]-2, currentlyEditing[i][2]-currentlyEditing[i][4], 2, currentlyEditing[i][4])
+                }
+                break;
+            }
         }
     }
 }
@@ -127,9 +150,11 @@ function runMapEdit(){
     mapEditExtraControls()
     renderEditingMap()
     fill(colorWvB[1-lightState])
+    fontSize(15)
     fillText("Current Object Count: " + mapEditingData.map[lightState].length, 10, 20)
     fillText("Currently Copied: [" + mapEditingData.copied + "]", 10, 40)
     fillText("Object Type: " + mapEditingData.selectionOptions[mapEditingData.objectType], 10, 60)
+    fillText("Shift:" + pressing["Shift"] + ", Other:" + pressing.s, 10, 80)
 }
 function mouseTouching(x, y, w, h){
     return touching(x, y, w, h, mouseX, mouseY, 1, 1)
@@ -142,6 +167,14 @@ function swapToGameplay(){
     player.y = player.spawnY
     player.fs = 0;
     player.hs = 0;
+}
+function isJSON(text){
+    try {
+        JSON.parse(text);
+        return true;
+    } catch (error) {
+        return false;
+    }
 }
 function mapEditExtraControls(){
     // Change back to game
@@ -202,14 +235,47 @@ function mapEditExtraControls(){
         lightState = 1 - lightState
         mapEditingData.selecting = -1
     }
-    // Change Interval
+    // Inspect (Change data other than movement)
     if(inputStart["i"]){
         let a
-        while(a !== null && !Number(a)){
-            a = prompt("Change Interval (currently=" + mapEditingData.interval + ")")
+        if(mapEditingData.selecting === -1){
+            // Change Interval
+            while(a !== null && !Number(a)){
+                a = prompt("Change Interval (currently=" + mapEditingData.interval + ")")
+            }
+            if(a !== null){
+                mapEditingData.interval = Number(a);
+            }
+            
+        } else if(mapEditingData.map[lightState][mapEditingData.selecting][0] === 4){
+            // Change Text
+            a = prompt("Change Text (currently=" + mapEditingData.map[lightState][mapEditingData.selecting][3] + ")")
+            if(a !== null){
+                mapEditingData.map[lightState][mapEditingData.selecting][3]= a;
+            }
         }
-        if(a !== null){
-            mapEditingData.interval = Number(a);
+    }
+    if(inputStart["u"]){
+        let a
+        if(mapEditingData.selecting === -1){
+            // Import Map
+            a = prompt("Import Map (CHANGE PARENTHESES TO [])")
+            while(a !== null && !isJSON(a)){
+                a = prompt("Import Map (CHANGE PARENTHESES TO [])")
+            }
+            if(a !== null){
+                let n = JSON.parse(a);
+                mapEditingData.map = n[0]
+                mapEditingData.interval = n[1]
+            }
+        } else if(mapEditingData.map[lightState][mapEditingData.selecting][0] === 4){
+            // Change Font Size
+            while(a !== null && !Number(a)){
+                a = prompt("Change Font Size (currently=" + mapEditingData.map[lightState][mapEditingData.selecting][4] + ")")
+            }
+            if(a !== null){
+                mapEditingData.map[lightState][mapEditingData.selecting][4] = Number(a);
+            }
         }
     }
     
@@ -230,6 +296,10 @@ function mapEditExtraControls(){
             }
             case 3: {
                 addObjectToMap(mapEditingData.objectType, mouseX, mouseY)
+                break;
+            }
+            case 4: {
+                addObjectToMap(mapEditingData.objectType, mouseX, mouseY, "DefaultText", 24)
                 break;
             }
         }
@@ -263,6 +333,13 @@ function mapEditExtraControls(){
                 }
                 case 3: {
                     if(mouseTouching(currentlyEditing[i][1], currentlyEditing[i][2], player.width, player.height)){
+                        mapEditingData.selecting = i;
+                        break loop;
+                    }
+                    break;
+                }
+                case 4: {
+                    if(mouseTouching(currentlyEditing[i][1], currentlyEditing[i][2] - currentlyEditing[i][4], currentlyEditing[i][4], currentlyEditing[i][4])){
                         mapEditingData.selecting = i;
                         break loop;
                     }

@@ -1,18 +1,1 @@
-maps.push(map(
-    [
-        new block(760, 500, 50, 10),
-
-        textObj(500, 200, "For me, the world"),
-        textObj(500, 250, "has always been"),
-        textObj(500, 300, "black and white"),
-    ],
-    [
-        new block(760, 500, 50, 10, 0.4, new colorObj(0, 0, 0)),
-
-        textObj(500, 200, "For me, the world"),
-        textObj(500, 250, "has always been"),
-        textObj(500, 300, "white and black"),
-    ],
-    60,
-    770, 480
-))
+maps.push(convertEditDataToMap([[[0,568,563,91,17],[3,607,543],[0,568,486,91,17],[0,568,410,91,17],[2,597,362],[4,234,235,"For me the world",24],[4,235,261,"has always been",24],[4,241,289,"black and white",24]],[[0,685,527,91,17],[0,685,446,91,17],[4,234,235,"For me the world",24],[4,235,261,"has always been",24],[4,241,289,"white and black",24]]],60));

@@ -1,5 +1,4 @@
-currentFullLevel = maps[0].map
-level = currentFullLevel[0]
+swapMap(maps[0])
 
 function extraControls(){
     switch(currentMode){
@@ -32,7 +31,10 @@ function draw(){
                 runMapEdit()
                 break;
             }
-
+            case 2: {
+                runMainMenu()
+                break;
+            }
         }
 
     } catch (e){

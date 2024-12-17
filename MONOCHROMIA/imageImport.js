@@ -22,3 +22,8 @@ let plrAnimDie = []
 for(let i = 1; i <= 6; ++i){
     plrAnimDie.push(getImgBlackWhite("Sprites/Player/Death/Player Explosion-"+i, -8, -6))
 }
+
+let titleScreenPressZ = [
+    new img("Sprites/Title Screen/PRESS.png", 0, 0),
+    new img("Sprites/Title Screen/Z.png")
+]
