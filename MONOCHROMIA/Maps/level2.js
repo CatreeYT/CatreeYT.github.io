@@ -15,5 +15,5 @@ maps.push(map(
         textObj(400, 200, "Action by Action"),
     ],
     60,
-    145, 379
+    145, 369
 ))

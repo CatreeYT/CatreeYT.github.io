@@ -41,11 +41,52 @@ function runTimer(){
     tickImages[tickImageState].draw(0, 0, 2, 2)
     tickLight[lightState].draw(32, 15, 4, 4)
 }
+function decideAnimState(){
+    if(player.animType !== -1){
+        if(player.coyoteFramesLeft > 0){
+            if(abs(player.hs) < 0.05){
+                player.animType = 0;
+                player.animFrame += idleAnimSpeed
+                player.animFrame %= plrAnimIdle.length
+            } else {
+                player.animType = 1;
+                player.animFrame += walkAnimSpeed
+                player.animFrame %= plrAnimWalk.length
+            }
+        } else {
+            if(player.fs < 0){
+                player.animType = 2;
+                player.animFrame = 0;
+            } else {
+                player.animType = 3;
+                player.animFrame = 0;
+            }
+        }
+    }
+}
 function renderPlayer(){
     //fill(255, 0, 0)
     if(player.animType !== -1){
         fill(colorWvB[1-lightState])
-        rect(player.x, player.y, player.width, player.height)
+        //rect(player.x, player.y, player.width, player.height)
+        switch(player.animType){
+            case 0: {
+                plrAnimIdle[floor(player.animFrame)].draw(player.x + Number(player.direction === -1) * facingLeftExtraMovement, player.y, 1.5, 1.5, (player.direction === -1), 0)
+                break;
+            }
+            case 1: {
+                plrAnimWalk[floor(player.animFrame)].draw(player.x + Number(player.direction === -1) * facingLeftExtraMovement, player.y, 1.5, 1.5, (player.direction === -1), 0)
+                break;
+            }
+            case 2: {
+                plrAnimJump.draw(player.x + Number(player.direction === -1) * facingLeftExtraMovement, player.y, 1.5, 1.5, (player.direction === -1), 0)
+                break;
+            }
+            case 3: {
+                plrAnimFall.draw(player.x + Number(player.direction === -1) * facingLeftExtraMovement, player.y, 1.5, 1.5, (player.direction === -1), 0)
+                break;
+            }
+        }
     } else {
         player.animFrame += 0.2;
         if(player.animFrame < plrAnimDie.length){
@@ -55,6 +96,7 @@ function renderPlayer(){
 }
 function runGameplay(){
     background(colorWvB[lightState])
+    decideAnimState()
     if(player.y >= height - 40){
         player.die()
     }

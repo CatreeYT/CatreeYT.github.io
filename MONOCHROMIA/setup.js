@@ -8,7 +8,8 @@ player.extraPixelsStanding = 1
 player.endJumpDamp = 0.5
 player.endJumpPrematureDamp = 0.25
 
-player.width = 16
+player.width = 12
+player.height = 30
 
 player.animFrame = 0;
 player.animType = 0;

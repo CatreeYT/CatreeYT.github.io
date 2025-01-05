@@ -55,5 +55,5 @@ maps.push(map(
         textObj(500, 200, "I lose myself"),
     ],
     60,
-    770, 230
+    770, 220
 ))

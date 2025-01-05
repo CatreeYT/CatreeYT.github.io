@@ -21,5 +21,5 @@ maps.push(map(
         textObj(335, 200, "Day by Day"),
     ],
     60,
-    390, 200
+    390, 190
 ))

@@ -37,5 +37,5 @@ maps.push(map(
         textObj(400, 300, "Every day is the same..."),
     ],
     60,
-    10, 80
+    10, 70
 ))
