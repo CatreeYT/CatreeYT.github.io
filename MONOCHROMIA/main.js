@@ -22,6 +22,7 @@ function draw(){
         width = canvas.width;
         height = canvas.height;
         ctx.imageSmoothingEnabled = false;
+        scale()
         switch(currentMode){
             case 0: {
                 runGameplay()

@@ -21,6 +21,10 @@ let titleScreenPressZ = [
 // Objects
 let spikes = getImgBlackWhite("Sprites/Spikes/Spikes", 0, -22)
 let doorwaySprite = new img("Sprites/Misc/Doorway.png", 0, 0)
+let springSprite = []
+for(let i = 1; i <= 3; ++i){
+    springSprite.push(new img("Sprites/Spring/Spring" + i + ".png"))
+}
 
 // Player
 let plrAnimDie = []

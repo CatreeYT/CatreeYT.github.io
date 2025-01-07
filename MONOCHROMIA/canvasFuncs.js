@@ -9,6 +9,8 @@ canvas.style.position = "absolute"
 canvas.style.top = "0px";
 canvas.style.left = "0px";
 
+let defaultWidth = 1366
+let defaultHeight = 768
 var width = canvas.width
 var height = canvas.height
 
@@ -40,6 +42,11 @@ var mouseY = 0
 
 var transX = 0;
 var transY = 0;
+let scaleValue = 1;
+
+function scale(){
+	scaleValue = width/defaultWidth
+}
 
 function linesTouching(a,b,c,d,p,q,r,s) {
 	var det, gamma, lambda;
@@ -172,7 +179,7 @@ function img(src, xOffset=0, yOffset=0){
 				y *= -1;
 				y -= this.img.height * scaleY;
 			}
-			ctx.drawImage(this.img, x, y, this.img.width*scaleX, this.img.height*scaleY);
+			ctx.drawImage(this.img, x*scaleValue, y*scaleValue, this.img.width*scaleX*scaleValue, this.img.height*scaleY*scaleValue);
 			if(flipX){
 				ctx.scale(-1, 1)
 			}
@@ -203,7 +210,7 @@ function tileset(src, xOffset=0, yOffset=0){
 				y *= -1;
 				y -= this.img.height * scaleY;
 			}
-			ctx.drawImage(this.img, this.img.height * tile, 0, this.img.height, this.img.height, x, y, this.img.height*scaleX, this.img.height*scaleY);
+			ctx.drawImage(this.img, this.img.height * tile * scaleValue, 0, this.img.height, this.img.height, x, y, this.img.height*scaleX*scaleValue, this.img.height*scaleY*scaleValue);
 			if(flipX){
 				ctx.scale(-1, 1)
 			}
@@ -337,7 +344,7 @@ function blend(clr1, clr2){
 
 
 function rect(x, y, w, h){
-	ctx.fillRect(x + transX, y + transY, w, h)
+	ctx.fillRect((x + transX)*scaleValue, (y + transY)*scaleValue, w*scaleValue, h*scaleValue)
 }
 
 function ellipse(x, y, w, h){
@@ -361,14 +368,24 @@ function font(setTo){
 }
 function fontSize(setTo){
 	var fontArgs = ctx.font.split(' ');
-	var newSize = setTo + 'px';
-	ctx.font = newSize + ' ' + fontArgs[fontArgs.length - 1]; // using the last part
+	var newSize = setTo;
+	ctx.font = newSize + 'px ' + fontArgs[fontArgs.length - 1]; // using the last part
 }
 function writeText(txt, x, y){
-	ctx.strokeText(txt, x + transX, y + transY)
+	let fontArgs = ctx.font.split(' ');
+	let currentSize = fontArgs[0].slice(0, fontArgs[0].length-2 )
+	let newSize = (currentSize*scaleValue);
+	ctx.font = newSize + 'px ' + fontArgs[fontArgs.length - 1]; // using the last part
+	ctx.strokeText(txt, (x + transX)*scaleValue, (y + transY)*scaleValue)
+	fontSize(currentSize)
 }
 function fillText(txt, x, y){
-	ctx.fillText(txt, x + transX, y + transY)
+	let fontArgs = ctx.font.split(' ');
+	let currentSize = fontArgs[0].slice(0, fontArgs[0].length-2)
+	let newSize = (currentSize*scaleValue);
+	ctx.font = newSize + 'px ' + fontArgs[fontArgs.length - 1]; // using the last part
+	ctx.fillText(txt, (x + transX)*scaleValue, (y + transY)*scaleValue)
+	fontSize(currentSize)
 }
 
 function background(color, g, b){
@@ -542,8 +559,8 @@ document.onkeyup = function (e) {
 document.onmousemove = function(event){
 	pMouseX = mouseX;
 	pMouseY = mouseY;
-	mouseX = event.pageX
-	mouseY = event.pageY
+	mouseX = event.pageX / scaleValue
+	mouseY = event.pageY / scaleValue
 	mouseMoved(event);
 }
 var firstClick = false;
