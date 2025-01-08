@@ -97,7 +97,7 @@ function renderPlayer(){
 function runGameplay(){
     background(colorWvB[lightState])
     decideAnimState()
-    if(player.y >= height - 40){
+    if(player.y >= defaultHeight - 40){
         player.die()
     }
     runTimer()

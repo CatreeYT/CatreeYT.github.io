@@ -14,7 +14,7 @@ let defaultHeight = 768
 var width = canvas.width
 var height = canvas.height
 
-var canvasMap = ctx.getImageData(0, 0, width, height);
+var canvasMap = ctx.getImageData(0, 0, width, defaultHeight);
 
 function getPixelData(x, y){
 	var rIndex = getCoords(x, y);
@@ -511,8 +511,8 @@ function drawFrame(){
 		background("#000000");
 		fontSize(200);
 		fill("#FFFFFF")
-		fillText("Click to start", 200, height - 400);
-		fillText("program", 400, height - 200);
+		fillText("Click to start", 200, defaultHeight - 400);
+		fillText("program", 400, defaultHeight - 200);
 	}
 	for(var i = 0; i < time.timers.length; ++i){
 		--time.timers[i][1];
