@@ -18,6 +18,11 @@ function runMainMenuExtraControls(){
     if(inputStart["z"]){
         currentMode = 0
     }
+    if(inputStart["x"]){
+        binds.jump = "w";
+        binds.moveLeft = "a";
+        binds.moveRight = "d";
+    }
 }
 
 let transitionData = {
